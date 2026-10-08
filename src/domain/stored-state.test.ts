@@ -116,6 +116,13 @@ describe('parseStoredState', () => {
     ['has a non-text expiryDate', { ...record(), expiryDate: 20261231 }],
     ['has notify on without a merchantDomain', record({ notify: true })],
     ['has notify on with an empty merchantDomain', record({ notify: true, merchantDomain: '' })],
+    ['has notify on with a space as merchantDomain', record({ notify: true, merchantDomain: ' ' })],
+    [
+      'has notify on with a whitespace-only merchantDomain',
+      record({ notify: true, merchantDomain: ' \t\n\u00a0' }),
+    ],
+    ['has notify off with an empty merchantDomain', record({ merchantDomain: '' })],
+    ['has notify off with a whitespace-only merchantDomain', record({ merchantDomain: '  ' })],
   ])('reports corrupt when a record %s', (_label, bad) => {
     const result = parseStoredState(stateWith(record({ id: 'good' }), bad));
     expect(result).toMatchObject({ status: 'corrupt' });
