@@ -1,0 +1,33 @@
+body {
+  font-size: 15px;
+}
+
+.library {
+  display: grid;
+  gap: 20px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+.library__header {
+  display: grid;
+  gap: 4px;
+}
+
+.library h1 {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.library h2 {
+  font-size: 16px;
+}
+
+.library__about {
+  display: grid;
+  gap: 6px;
+  max-width: 62ch;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
