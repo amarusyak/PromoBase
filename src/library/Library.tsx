@@ -1,3 +1,4 @@
+import { SpikeLibraryPanel } from '../spike/LibraryPanel';
 import { Brand } from '../ui/Brand';
 import { RETENTION_NOTICE, STORAGE_MODE } from '../ui/copy';
 import { summarizeState } from '../ui/state-summary';
@@ -24,6 +25,8 @@ export function Library() {
       ) : (
         <p>{summary.capacityText}</p>
       )}
+
+      <SpikeLibraryPanel />
 
       <section className="library__about" aria-labelledby="about-title">
         <h2 id="about-title">About your saved codes</h2>

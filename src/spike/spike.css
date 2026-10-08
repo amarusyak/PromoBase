@@ -1,0 +1,91 @@
+/* Spike harness only. Plain and functional. */
+.spike {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+}
+
+.spike h2 {
+  font-size: 13px;
+}
+
+.spike__facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 10px;
+  margin: 0;
+}
+
+.spike__facts dt {
+  color: var(--muted);
+}
+
+.spike__facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.spike__access,
+.spike__mode {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.spike__access label {
+  display: grid;
+  gap: 4px;
+}
+
+.spike input[type='text'] {
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--font-code);
+}
+
+.spike__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.spike__buttons button {
+  padding: 5px 9px;
+  border: 1px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.spike__buttons button:disabled {
+  border-color: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.spike__result {
+  min-height: 1.45em;
+  color: var(--muted);
+}
+
+.spike__log {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--wash);
+  color: var(--ink);
+  font-family: var(--font-code);
+  font-size: 11px;
+  white-space: pre;
+}

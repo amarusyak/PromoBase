@@ -1,0 +1,17 @@
+// Storage keys and names shared between the service worker and the pages.
+// Kept apart from background.ts so that importing them does not register listeners.
+export type ReminderMode = 'guarded' | 'always';
+
+export const MODE_KEY = 'spike.mode';
+export const VISITS_KEY = 'spike.visits';
+export const AUTO_OPEN_KEY = 'spike.autoOpen';
+export const COUNTERS_KEY = 'spike.counters';
+export const POPUP_PORT = 'spike:popup';
+
+/** Per-tab visit state, keyed by tab id. Lives in session storage so it survives worker restarts. */
+export interface Visits {
+  /** Tabs already reminded during the current visit to this domain (PB-007). */
+  reminded: Record<string, string>;
+  /** Tabs with a reminder waiting for the tab to become active and focused (D-001, D-002). */
+  pending: Record<string, string>;
+}

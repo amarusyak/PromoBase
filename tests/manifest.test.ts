@@ -17,16 +17,21 @@ describe('manifest', () => {
     expect(manifest.minimum_chrome_version).toBe('127');
   });
 
-  it('requests only the permissions the current build uses', () => {
-    expect(manifest.permissions).toEqual(['storage']);
+  // Spike build: activeTab (D-008), scripting for the content-script comparison
+  // (D-009), and optional site access that the user grants per merchant.
+  it('requests only the permissions the spike uses', () => {
+    expect(manifest.permissions).toEqual(['storage', 'activeTab', 'scripting']);
+    expect(manifest.optional_host_permissions).toEqual(['*://*/*']);
   });
 
-  it('declares no site access and injects no scripts', () => {
+  it('has no site access at install and no statically declared content scripts', () => {
     const keys = Object.keys(manifest);
     expect(keys).not.toContain('host_permissions');
-    expect(keys).not.toContain('optional_host_permissions');
-    expect(keys).not.toContain('optional_permissions');
     expect(keys).not.toContain('content_scripts');
+  });
+
+  it('is labelled as a spike build so it cannot be mistaken for a release', () => {
+    expect(manifest.name).toContain('(spike)');
   });
 
   it('opens the popup from the toolbar and runs a module service worker', () => {
