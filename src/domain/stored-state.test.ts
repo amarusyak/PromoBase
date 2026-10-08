@@ -114,10 +114,20 @@ describe('parseStoredState', () => {
     ['has a non-text note', { ...record(), note: 140 }],
     ['has a null merchantDomain', { ...record(), merchantDomain: null }],
     ['has a non-text expiryDate', { ...record(), expiryDate: 20261231 }],
+    ['has notify on without a merchantDomain', record({ notify: true })],
+    ['has notify on with an empty merchantDomain', record({ notify: true, merchantDomain: '' })],
   ])('reports corrupt when a record %s', (_label, bad) => {
     const result = parseStoredState(stateWith(record({ id: 'good' }), bad));
     expect(result).toMatchObject({ status: 'corrupt' });
     expect(result.status === 'corrupt' && result.reason).toContain('record 1');
+  });
+
+  it.each([
+    ['on with a merchantDomain', { notify: true, merchantDomain: 'example.com' }],
+    ['off with a merchantDomain', { notify: false, merchantDomain: 'example.com' }],
+    ['off without a merchantDomain', { notify: false }],
+  ])('accepts notify %s', (_label, fields) => {
+    expect(parseStoredState(stateWith(record(fields)))).toMatchObject({ status: 'ok' });
   });
 
   it('reports corrupt when two records share an id', () => {

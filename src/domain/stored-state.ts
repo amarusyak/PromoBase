@@ -39,8 +39,10 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Structural check only: field presence and types. Business rules such as
- * date formats and note length are enforced when a record is written.
+ * Checks field presence and types, plus the one cross-field rule that reminder
+ * logic depends on: a record can only ask for reminders when it has a merchant
+ * domain to match (PRD 8.1). Other business rules, such as date formats and
+ * note length, are enforced when a record is written.
  */
 function describeRecordProblem(value: unknown): string | undefined {
   if (!isPlainObject(value)) return 'is not an object';
@@ -56,6 +58,7 @@ function describeRecordProblem(value: unknown): string | undefined {
     }
   }
   if (typeof value.notify !== 'boolean') return 'has no valid "notify"';
+  if (value.notify && !value.merchantDomain) return 'has "notify" on without a "merchantDomain"';
   return undefined;
 }
 
