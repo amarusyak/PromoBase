@@ -1,0 +1,46 @@
+body {
+  width: 360px;
+  font-size: 13px;
+}
+
+.popup {
+  display: grid;
+  gap: 14px;
+  padding: 14px 16px 16px;
+}
+
+.popup__header {
+  display: grid;
+  gap: 2px;
+}
+
+.popup__header h1 {
+  font-size: 15px;
+}
+
+.ticket {
+  --bite: 9px;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 16px 22px;
+  border-radius: 10px;
+  background: var(--wash);
+}
+
+.ticket h2 {
+  font-size: 14px;
+}
+
+.popup__summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.popup__notice {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}

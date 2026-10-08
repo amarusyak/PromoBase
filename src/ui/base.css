@@ -1,0 +1,111 @@
+/* Shared tokens and element defaults for every PromoBase page. */
+:root {
+  color-scheme: light dark;
+
+  --ink: #14213d;
+  --paper: #ffffff;
+  --wash: #eef2f7;
+  --line: #c9d2de;
+  --muted: #52607a;
+  --marker: #ffdd33;
+  --alert: #a4262c;
+
+  /* System faces only: nothing is fetched or bundled. Codes use a monospace
+     face so that 0/O and 1/l cannot be confused when read off the screen. */
+  --font-text: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-code: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f3f6fb;
+    --paper: #14213d;
+    --wash: #1e2e52;
+    --line: #3a4c75;
+    --muted: #b3bfd4;
+    --alert: #ffb3b0;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-text);
+  line-height: 1.45;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* A ticket: a bar with a bite taken out of each short edge. */
+.brand__mark,
+.ticket {
+  --bite: 4px;
+  mask:
+    radial-gradient(circle var(--bite) at 0 50%, #0000 calc(100% - 0.5px), #000) left / 51% 100%
+      no-repeat,
+    radial-gradient(circle var(--bite) at 100% 50%, #0000 calc(100% - 0.5px), #000) right / 51% 100%
+      no-repeat;
+}
+
+.brand__mark {
+  width: 22px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--marker);
+}
+
+.button {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--paper);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:disabled {
+  background: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.problem {
+  padding: 10px 12px;
+  border-left: 3px solid var(--alert);
+  background: var(--wash);
+}
