@@ -2,7 +2,7 @@
 
 A Chrome extension for saving promo codes - especially the ones you pick up from creators and online content - and getting reminded of them when you visit the merchant's site.
 
-**Status:** pre-implementation. The repository currently holds the project bootstrap only; the extension skeleton lands next.
+**Status:** early development. The extension loads and shows its popup; saving codes is not implemented yet.
 
 ## What it does (first release)
 
@@ -23,9 +23,42 @@ Google Chrome desktop, version 127 or later (Manifest V3).
 
 ## Development
 
-Setup, build and test instructions will be added together with the extension skeleton.
+Requirements: Node.js 22.12 or later, npm, and Google Chrome 127 or later.
+
+```sh
+npm install
+npm run build    # production build into dist/
+npm run dev      # rebuild on every change
+```
+
+Load the build in Chrome:
+
+1. Open `chrome://extensions` and turn on **Developer mode**.
+2. Choose **Load unpacked** and select the `dist/` folder.
+3. Pin PromoBase from the extensions menu and click its toolbar icon.
+
+After a rebuild, reopening the popup is enough to see popup changes. Changes to the manifest or the service worker need the reload button on the PromoBase card in `chrome://extensions`.
+
+Checks:
+
+```sh
+npm run check    # lint, type check, format check, unit tests, build
+npm test         # unit tests only
+```
 
 Stack: TypeScript, Manifest V3, React with Vite.
+
+| Path             | Contents                                                    |
+| ---------------- | ----------------------------------------------------------- |
+| `src/domain`     | Types and pure logic, no Chrome APIs                        |
+| `src/platform`   | Thin adapters around Chrome APIs                            |
+| `src/data`       | Reading stored state                                        |
+| `src/ui`         | Code shared by the pages                                    |
+| `src/popup`      | Toolbar popup                                               |
+| `src/library`    | Full-page library                                           |
+| `src/background` | Service worker                                              |
+| `public`         | Manifest and icons, copied to `dist/` unchanged             |
+| `tests`          | Checks that span the project, such as the manifest contract |
 
 ## Reporting issues
 
