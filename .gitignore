@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Packaged extension and signing material - never commit
+*.crx
+*.pem
+*.zip
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Test output
+coverage/
+playwright-report/
+test-results/
+
+# Local data exports - real promo-code records must not be committed (PB-015)
+promobase-export*.json
+
+# Editors and OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+*.log
