@@ -12,6 +12,7 @@ import { RecordForm, type SubmitOutcome } from '../ui/RecordForm';
 import { groupRecords, type RecordView } from '../ui/record-view';
 import { summarizeState } from '../ui/state-summary';
 import { store } from '../ui/store';
+import { useNotice } from '../ui/use-notice';
 import { useStoredState } from '../ui/use-stored-state';
 import { useToday } from '../ui/use-today';
 
@@ -24,8 +25,10 @@ export function Library() {
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Editing>();
   const [confirming, setConfirming] = useState<string>();
-  const [notice, setNotice] = useState('');
+  const [notice, showNotice] = useNotice();
   const [failure, setFailure] = useState<string>();
+  const [deleting, setDeleting] = useState(false);
+  const deleteUnderWay = useRef(false);
   const list = useRef<HTMLDivElement>(null);
 
   if (result === undefined) return null;
@@ -54,7 +57,7 @@ export function Library() {
     if (outcome.ok) {
       setEditing(undefined);
       setFailure(undefined);
-      setNotice(`Saved ${outcome.record.promoCode}.`);
+      showNotice(`Saved ${outcome.record.promoCode}.`);
       return { ok: true };
     }
     if (outcome.problem === 'invalid') return { ok: false, errors: outcome.errors };
@@ -62,13 +65,21 @@ export function Library() {
   }
 
   async function remove(id: string) {
+    // A second click while the first delete is under way would find the record
+    // gone and report that as a failure, over the notice of the delete that worked.
+    if (deleteUnderWay.current) return;
+    deleteUnderWay.current = true;
+    setDeleting(true);
     const outcome = await deleteRecord(store, id);
-    setConfirming(undefined);
+    deleteUnderWay.current = false;
+    setDeleting(false);
+    // Another row may have been asked about in the meantime; leave that question open.
+    setConfirming((current) => (current === id ? undefined : current));
     if (outcome.ok) {
       setFailure(undefined);
-      setNotice(`Deleted ${outcome.record.promoCode}.`);
+      showNotice(`Deleted ${outcome.record.promoCode}.`);
     } else {
-      setNotice('');
+      showNotice('');
       setFailure(changeFailureMessage(outcome, 'delete'));
     }
     // The row that held the focus is gone or changed; keep the focus in the list.
@@ -78,7 +89,13 @@ export function Library() {
   return (
     <Page>
       <div className="library__bar">
-        <p>{summary.capacityText}</p>
+        <p>
+          {summary.capacityText}
+          {/* Next to the count, so nothing below moves when it appears or goes away. */}
+          <span className="library__notice" role="status">
+            {notice}
+          </span>
+        </p>
         <button
           className="button"
           type="button"
@@ -111,9 +128,6 @@ export function Library() {
         </div>
       )}
 
-      <p className="library__notice" role="status">
-        {notice}
-      </p>
       {failure !== undefined && (
         <p className="problem" role="alert">
           {failure}
@@ -149,6 +163,7 @@ export function Library() {
                     key={row.id}
                     row={row}
                     confirming={confirming === row.id}
+                    deleting={deleting}
                     onEdit={() => {
                       const record = records.find((candidate) => candidate.id === row.id);
                       if (record !== undefined) setEditing({ kind: 'edit', record });
@@ -207,6 +222,8 @@ interface CodeTicketProps {
   row: RecordView;
   /** True while this row asks whether it should really be deleted (PB-011). */
   confirming: boolean;
+  /** True while a delete is under way; the answer cannot be given twice. */
+  deleting: boolean;
   onEdit: () => void;
   onAskDelete: () => void;
   onKeep: () => void;
@@ -214,7 +231,15 @@ interface CodeTicketProps {
 }
 
 /** One saved code, drawn as a ticket: details on the left, the code on its stub. */
-function CodeTicket({ row, confirming, onEdit, onAskDelete, onKeep, onDelete }: CodeTicketProps) {
+function CodeTicket({
+  row,
+  confirming,
+  deleting,
+  onEdit,
+  onAskDelete,
+  onKeep,
+  onDelete,
+}: CodeTicketProps) {
   const keep = useRef<HTMLButtonElement>(null);
 
   // The question appears where Delete was; put the focus on the safe answer.
@@ -246,10 +271,21 @@ function CodeTicket({ row, confirming, onEdit, onAskDelete, onKeep, onDelete }: 
         {confirming ? (
           <div className="code-ticket__actions" role="group" aria-label={`Delete ${row.code}?`}>
             <span>Delete this code?</span>
-            <button className="button button--danger" type="button" onClick={onDelete}>
+            <button
+              className="button button--danger"
+              type="button"
+              disabled={deleting}
+              onClick={onDelete}
+            >
               Delete
             </button>
-            <button className="button button--quiet" type="button" ref={keep} onClick={onKeep}>
+            <button
+              className="button button--quiet"
+              type="button"
+              ref={keep}
+              disabled={deleting}
+              onClick={onKeep}
+            >
               Keep
             </button>
           </div>

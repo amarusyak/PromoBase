@@ -37,12 +37,12 @@ body {
   gap: 4px;
 }
 
-.library__search p:empty,
-.library__notice:empty {
+.library__search p:empty {
   display: none;
 }
 
 .library__notice {
+  margin-left: 14px;
   font-weight: 600;
 }
 
