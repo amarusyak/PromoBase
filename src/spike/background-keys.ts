@@ -7,6 +7,8 @@ export const VISITS_KEY = 'spike.visits';
 export const AUTO_OPEN_KEY = 'spike.autoOpen';
 export const COUNTERS_KEY = 'spike.counters';
 export const POPUP_PORT = 'spike:popup';
+/** The window id from the latest windows.onFocusChanged event, or 'none' when Chrome reported losing focus. */
+export const FOCUS_KEY = 'spike.lastFocusEvent';
 
 /** Per-tab visit state, keyed by tab id. Lives in session storage so it survives worker restarts. */
 export interface Visits {

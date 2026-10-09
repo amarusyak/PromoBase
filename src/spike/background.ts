@@ -7,12 +7,14 @@
 import {
   AUTO_OPEN_KEY,
   COUNTERS_KEY,
+  FOCUS_KEY,
   MODE_KEY,
   POPUP_PORT,
   VISITS_KEY,
   type ReminderMode,
   type Visits,
 } from './background-keys';
+import { BUILD_ID, BUILD_ID_REQUEST } from './build-id';
 import { domainFromPattern, hostMatchesDomain, hostOf } from './domains';
 import { logEvent } from './log';
 import { describeError, getLocal, getSession } from './store';
@@ -49,6 +51,29 @@ async function windowFocused(windowId: number): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Three views of "is Chrome in front", logged with every reminder decision so they
+ * can be compared: the tab's window, the last-focused window, and the latest
+ * windows.onFocusChanged event ('none' means Chrome reported losing focus).
+ */
+async function focusSnapshot(windowId: number): Promise<Record<string, unknown>> {
+  let lastFocused: unknown = null;
+  try {
+    const window = await chrome.windows.getLastFocused();
+    lastFocused = {
+      id: window.id ?? null,
+      focused: window.focused,
+      sameWindow: window.id === windowId,
+    };
+  } catch {
+    // No window at all.
+  }
+  return {
+    lastFocused,
+    lastFocusEvent: (await getSession<number | 'none'>(FOCUS_KEY)) ?? 'no event yet',
+  };
 }
 
 async function setBadge(tabId: number, text: string): Promise<void> {
@@ -122,11 +147,24 @@ async function considerReminder(
       visits.pending[tabId] = domain;
       await writeVisits(visits);
       await setBadge(tabId, '1');
-      await logEvent('sw', 'reminder:deferred', { tabId, domain, active, focused, trigger });
+      await logEvent('sw', 'reminder:deferred', {
+        tabId,
+        domain,
+        active,
+        focused,
+        trigger,
+        ...(await focusSnapshot(windowId)),
+      });
     }
     return;
   }
-  await tryOpenPopup(tabId, windowId, domain, visits, { mode, active, focused, trigger });
+  await tryOpenPopup(tabId, windowId, domain, visits, {
+    mode,
+    active,
+    focused,
+    trigger,
+    ...(await focusSnapshot(windowId)),
+  });
 }
 
 // Detection method A: tabs.onUpdated. Without the "tabs" permission, tab.url is
@@ -190,7 +228,13 @@ async function handleActivation(tabId: number, windowId: number, trigger: string
 
 // Detection method B: a content script registered only for granted sites (PRD 9.2).
 // It is reconciled from permission events and at startup, never from the popup (D-013).
-async function reconcileContentScripts(reason: string): Promise<void> {
+function reconcileContentScripts(reason: string): Promise<void> {
+  // onInstalled and onStartup fire together after a browser update; unserialised,
+  // both tried to register the script and one failed with "Duplicate script ID".
+  return navigator.locks.request('spike.reconcile', () => reconcileNow(reason));
+}
+
+async function reconcileNow(reason: string): Promise<void> {
   try {
     const { origins = [] } = await chrome.permissions.getAll();
     const matches = origins.filter((origin) => domainFromPattern(origin) !== undefined);
@@ -237,8 +281,13 @@ chrome.tabs.onActivated.addListener(({ tabId, windowId }) => {
 });
 
 chrome.windows.onFocusChanged.addListener((windowId) => {
-  if (windowId === chrome.windows.WINDOW_ID_NONE) return;
+  const lostFocus = windowId === chrome.windows.WINDOW_ID_NONE;
   void (async () => {
+    await chrome.storage.session.set({ [FOCUS_KEY]: lostFocus ? 'none' : windowId });
+    await logEvent('sw', 'focus:windows.onFocusChanged', {
+      windowId: lostFocus ? 'none' : windowId,
+    });
+    if (lostFocus) return;
     const [tab] = await chrome.tabs.query({ active: true, windowId });
     if (tab?.id !== undefined) await handleActivation(tab.id, windowId, 'windows.onFocusChanged');
   })();
@@ -276,7 +325,11 @@ chrome.runtime.onStartup.addListener(() => {
   })();
 });
 
-chrome.runtime.onMessage.addListener((message: unknown, sender) => {
+chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
+  if (message === BUILD_ID_REQUEST) {
+    sendResponse(BUILD_ID);
+    return;
+  }
   if (!isContentReport(message)) return;
   void logEvent('content', `detect:content-script:${message.reason}`, {
     tabId: sender.tab?.id ?? null,

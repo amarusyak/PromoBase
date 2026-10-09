@@ -17,13 +17,13 @@ export function describeManifestMismatch(
 ): string | undefined {
   const list = (values: readonly string[] | undefined) => [...(values ?? [])].sort().join(', ');
   if (built.name !== loaded.name) {
-    return `name is "${loaded.name}", this build is "${built.name}"`;
+    return `the loaded manifest is named "${loaded.name}", this build is "${built.name}"`;
   }
   if (list(built.permissions) !== list(loaded.permissions)) {
-    return `permissions are [${list(loaded.permissions)}], this build needs [${list(built.permissions)}]`;
+    return `the loaded manifest has permissions [${list(loaded.permissions)}], this build needs [${list(built.permissions)}]`;
   }
   if (list(built.optional_host_permissions) !== list(loaded.optional_host_permissions)) {
-    return `optional site access is [${list(loaded.optional_host_permissions)}], this build needs [${list(built.optional_host_permissions)}]`;
+    return `the loaded manifest has optional site access [${list(loaded.optional_host_permissions)}], this build needs [${list(built.optional_host_permissions)}]`;
   }
   return undefined;
 }

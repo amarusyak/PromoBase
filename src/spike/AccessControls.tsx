@@ -41,11 +41,21 @@ export function AccessControls({
       .catch(() => undefined);
   }
 
+  // Makes the call and records whether Chrome still considers the click "live" at
+  // that moment. Reading the activation state does not use it up.
+  function callChrome(variant: string): Promise<boolean> {
+    const activation = {
+      gestureActive: navigator.userActivation.isActive,
+      documentFocused: document.hasFocus(),
+    };
+    const outcome = chrome.permissions.request({ origins });
+    void logEvent(source, 'permissions.request:called', { variant, origins, ...activation });
+    return outcome;
+  }
+
   // Nothing runs before the request: the click's user gesture is intact.
   function requestDirect() {
-    const outcome = chrome.permissions.request({ origins });
-    void logEvent(source, 'permissions.request:called', { variant: 'direct', origins });
-    report('direct', outcome);
+    report('direct', callChrome('direct'));
   }
 
   function requestAfterWrite() {
@@ -53,18 +63,19 @@ export function AccessControls({
       'after-awaited-write',
       (async () => {
         await chrome.storage.local.set({ 'spike.scratch': Date.now() });
-        return chrome.permissions.request({ origins });
+        return callChrome('after-awaited-write');
       })(),
     );
   }
 
   function requestAfterDelay() {
     setResult('after-6s-delay: waiting 6 seconds...');
+    void logEvent(source, 'permissions.request:clicked', { variant: 'after-6s-delay' });
     report(
       'after-6s-delay',
       (async () => {
         await wait(6000);
-        return chrome.permissions.request({ origins });
+        return callChrome('after-6s-delay');
       })(),
     );
   }

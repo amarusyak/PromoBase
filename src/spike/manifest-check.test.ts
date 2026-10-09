@@ -24,11 +24,11 @@ describe('describeManifestMismatch', () => {
 
   it('reports missing permissions when only the name matches', () => {
     const loaded = { ...spike, permissions: ['storage'] };
-    expect(describeManifestMismatch(spike, loaded)).toContain('permissions are [storage]');
+    expect(describeManifestMismatch(spike, loaded)).toContain('has permissions [storage]');
   });
 
   it('reports missing optional site access', () => {
     const loaded = { name: spike.name, permissions: spike.permissions };
-    expect(describeManifestMismatch(spike, loaded)).toContain('optional site access is []');
+    expect(describeManifestMismatch(spike, loaded)).toContain('has optional site access []');
   });
 });

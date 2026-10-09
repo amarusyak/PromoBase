@@ -26,6 +26,14 @@ function PopupPanel() {
 
   useEffect(() => {
     const port = chrome.runtime.connect({ name: POPUP_PORT });
+    // Clicks and focus changes inside the popup, to see what keeps a user gesture
+    // alive and whether a popup opened behind another app ever gets focus.
+    const onPointerDown = () => void logEvent('popup', 'popup:pointerdown');
+    const onFocus = () => void logEvent('popup', 'popup:window-focus');
+    const onBlur = () => void logEvent('popup', 'popup:window-blur');
+    document.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('blur', onBlur);
     void (async () => {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       const autoOpen = await getSession<{ tabId: number; t: number }>(AUTO_OPEN_KEY);
@@ -47,10 +55,16 @@ function PopupPanel() {
         urlVisible: tab?.url !== undefined,
         host: host ?? null,
         matched: matched ?? null,
+        documentFocused: document.hasFocus(),
       });
       setContext({ trigger, host, matched });
     })();
-    return () => port.disconnect();
+    return () => {
+      port.disconnect();
+      document.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('blur', onBlur);
+    };
   }, []);
 
   if (context === undefined) return null;

@@ -5,6 +5,8 @@ import { defineConfig } from 'vitest/config';
 // service worker. The manifest and icons are static files in public/.
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
+  // Spike only: lets the pages detect a service worker left over from an older build.
+  define: { __BUILD_ID__: JSON.stringify(Date.now().toString(36)) },
   build: {
     // Minimum supported Chrome, kept in step with minimum_chrome_version in the manifest.
     target: 'chrome127',
