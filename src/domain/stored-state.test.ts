@@ -1,17 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { PromoCodeRecord } from './record';
+import { sampleRecord as record } from '../../tests/support/sample-record';
+import { NOTE_MAX_LENGTH, PROMO_CODE_MAX_LENGTH, RECORD_LIMIT } from './record';
 import { parseStoredState, SCHEMA_VERSION } from './stored-state';
-
-function record(overrides: Partial<PromoCodeRecord> = {}): PromoCodeRecord {
-  return {
-    id: '3f6c1d2e-0000-4000-8000-000000000001',
-    promoCode: 'WELCOME10',
-    notify: false,
-    createdAt: '2026-10-08T12:00:00.000Z',
-    updatedAt: '2026-10-08T12:00:00.000Z',
-    ...overrides,
-  };
-}
 
 function stateWith(...records: unknown[]) {
   return { schemaVersion: SCHEMA_VERSION, records };
@@ -114,6 +104,12 @@ describe('parseStoredState', () => {
     ['has a non-text note', { ...record(), note: 140 }],
     ['has a null merchantDomain', { ...record(), merchantDomain: null }],
     ['has a non-text expiryDate', { ...record(), expiryDate: 20261231 }],
+    ['has a startDate in the typed form', record({ startDate: '01.10.2026' })],
+    ['has an empty startDate', record({ startDate: '' })],
+    ['has a startDate that is no real day', record({ startDate: '2026-02-30' })],
+    ['has words as expiryDate', record({ expiryDate: 'tomorrow' })],
+    ['has a timestamp as expiryDate', record({ expiryDate: '2026-12-31T00:00:00.000Z' })],
+    ['has an expiryDate that is no real day', record({ expiryDate: '2026-13-01' })],
     ['has notify on without a merchantDomain', record({ notify: true })],
     ['has notify on with an empty merchantDomain', record({ notify: true, merchantDomain: '' })],
     ['has notify on with a space as merchantDomain', record({ notify: true, merchantDomain: ' ' })],
@@ -158,6 +154,32 @@ describe('parseStoredState', () => {
       });
     },
   );
+
+  // What a person may enter is checked on the way in, not here: a stricter entry
+  // rule in a later build must not make records unreadable that an earlier one saved.
+  it.each([
+    ['a date before the years the form allows', record({ expiryDate: '1999-12-31' })],
+    [
+      'a start date after the expiry date',
+      record({ startDate: '2026-12-01', expiryDate: '2026-10-01' }),
+    ],
+    ['a note over the entry limit', record({ note: 'n'.repeat(NOTE_MAX_LENGTH + 1) })],
+    [
+      'a promo code over the entry limit',
+      record({ promoCode: 'C'.repeat(PROMO_CODE_MAX_LENGTH + 1) }),
+    ],
+    ['a promo code with spaces around it', record({ promoCode: ' WELCOME10 ' })],
+    ['an address that is not one', record({ resourceUrl: 'seen in a video' })],
+  ])('accepts a record with %s', (_label, unusual) => {
+    expect(parseStoredState(stateWith(unusual))).toMatchObject({ status: 'ok' });
+  });
+
+  it('accepts more records than the guest limit', () => {
+    const records = Array.from({ length: RECORD_LIMIT + 1 }, (_, index) =>
+      record({ id: `id-${index}` }),
+    );
+    expect(parseStoredState(stateWith(...records))).toMatchObject({ status: 'ok' });
+  });
 
   it('reports corrupt when two records share an id', () => {
     const result = parseStoredState(stateWith(record(), record({ promoCode: 'OTHER' })));

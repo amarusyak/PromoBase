@@ -4,7 +4,7 @@ import type { KeyValueStore } from '../platform/key-value-store';
 import { memoryStore } from '../platform/memory-store';
 import { loadStoredState } from './load-state';
 
-function failingStore(error: unknown): KeyValueStore {
+function failingStore(error: unknown): Pick<KeyValueStore, 'get'> {
   // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- a non-Error rejection is one of the cases under test
   return { get: () => Promise.reject(error) };
 }

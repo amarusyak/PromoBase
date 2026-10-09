@@ -7,7 +7,7 @@ export type LoadResult =
   | { status: 'unavailable'; reason: string };
 
 /** Reads and interprets the persisted state. Never throws. */
-export async function loadStoredState(store: KeyValueStore): Promise<LoadResult> {
+export async function loadStoredState(store: Pick<KeyValueStore, 'get'>): Promise<LoadResult> {
   let raw: unknown;
   try {
     raw = await store.get(STATE_KEY);

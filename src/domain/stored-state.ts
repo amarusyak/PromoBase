@@ -1,3 +1,4 @@
+import { isIsoDate } from './dates';
 import { isCanonicalMerchantDomain } from './merchant-domain';
 import type { PromoCodeRecord } from './record';
 
@@ -35,6 +36,8 @@ const OPTIONAL_STRING_FIELDS = [
   'note',
 ] as const;
 
+const DATE_FIELDS = ['startDate', 'expiryDate'] as const;
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -42,10 +45,13 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 /**
  * Checks field presence and types, plus the rules that reminder logic depends
  * on (PRD 8.1): a merchant domain is either absent or written in canonical form,
- * and a record can only ask for reminders when it has one. Canonical form is a
- * matter of spelling only; the Public Suffix List is not consulted here, so a
- * list update can never make saved records unreadable. Other business rules,
- * such as date formats and note length, are enforced when a record is written.
+ * a record can only ask for reminders when it has one, and start and expiry
+ * dates are real days written as YYYY-MM-DD, because status is worked out by
+ * comparing them as text. Canonical form is a matter of spelling only; the
+ * Public Suffix List is not consulted here, so a list update can never make
+ * saved records unreadable. Rules about what a person may enter, such as
+ * length limits, the allowed years and the order of the two dates, are
+ * enforced when a record is written, not here.
  */
 function describeRecordProblem(value: unknown): string | undefined {
   if (!isPlainObject(value)) return 'is not an object';
@@ -68,6 +74,12 @@ function describeRecordProblem(value: unknown): string | undefined {
   }
   if (value.notify && merchantDomain === undefined) {
     return 'has "notify" on without a "merchantDomain"';
+  }
+  for (const field of DATE_FIELDS) {
+    const date = value[field] as string | undefined;
+    if (date !== undefined && !isIsoDate(date)) {
+      return `has a "${field}" that is not a calendar date`;
+    }
   }
   return undefined;
 }
