@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { sampleRecord } from '../../tests/support/sample-record';
-import { NOTE_MAX_LENGTH, PROMO_CODE_MAX_LENGTH, RESOURCE_URL_MAX_LENGTH } from './record';
+import { deriveMerchantDomain } from './derive-merchant-domain';
+import {
+  NOTE_MAX_LENGTH,
+  PROMO_CODE_MAX_LENGTH,
+  RESOURCE_URL_MAX_LENGTH,
+  type PromoCodeRecord,
+} from './record';
 import {
   recordToInput,
   recordWarnings,
@@ -8,8 +14,11 @@ import {
   type RecordFields,
   type RecordInput,
 } from './record-input';
+import { parseStoredState, SCHEMA_VERSION } from './stored-state';
 
 const TODAY = '2026-10-09';
+
+const stateWith = (...records: PromoCodeRecord[]) => ({ schemaVersion: SCHEMA_VERSION, records });
 
 function input(overrides: Partial<RecordInput> = {}): RecordInput {
   return {
@@ -396,6 +405,100 @@ describe('recordToInput', () => {
       });
     },
   );
+
+  // No write path stores a merchant domain without an address, but the read side
+  // accepts one (found in review of PR #4). Such a record must open as a form that
+  // can be saved, and saving it must not drop the merchant, or reminders with it.
+  describe('a saved merchant domain with no address', () => {
+    it('opens with the domain as the address and no correction', () => {
+      const reopened = recordToInput(sampleRecord({ merchantDomain: 'dropbox.com' }));
+      expect(reopened).toStrictEqual({
+        promoCode: 'WELCOME10',
+        resourceUrl: 'dropbox.com',
+        merchantDomain: '',
+        startDate: '',
+        expiryDate: '',
+        note: '',
+      });
+    });
+
+    it.each([
+      ['an ordinary domain', 'dropbox.com', 'dropbox.com'],
+      ['a site on a shared platform', 'mystore.myshopify.com', 'mystore.myshopify.com'],
+      ['an international name', 'xn--mnchen-3ya.de', 'xn--mnchen-3ya.de'],
+      // Canonical by spelling, which is all the read side asks for (D-070).
+      ['a domain the suffix list reads as a subdomain', 'www.dropbox.com', 'dropbox.com'],
+    ])('can be saved unchanged and keeps the merchant: %s', (_label, merchantDomain, expected) => {
+      const record = sampleRecord({ merchantDomain });
+      expect(parseStoredState(stateWith(record))).toMatchObject({ status: 'ok' });
+
+      expect(validateRecordInput(recordToInput(record))).toStrictEqual({
+        ok: true,
+        fields: { promoCode: 'WELCOME10', resourceUrl: merchantDomain, merchantDomain: expected },
+      });
+    });
+
+    it.each([
+      ['a shared suffix', 'co.uk'],
+      ['a platform suffix', 'github.io'],
+    ])('opens blank when the domain cannot name a merchant: %s', (_label, merchantDomain) => {
+      const record = sampleRecord({ merchantDomain });
+      expect(parseStoredState(stateWith(record))).toMatchObject({ status: 'ok' });
+
+      const reopened = recordToInput(record);
+      expect(reopened).toMatchObject({ resourceUrl: '', merchantDomain: '' });
+      expect(validateRecordInput(reopened)).toStrictEqual({
+        ok: true,
+        fields: { promoCode: 'WELCOME10' },
+      });
+    });
+  });
+
+  // Every pairing of a stored address and a stored merchant domain that the read
+  // side lets through, including ones no write path produces.
+  describe('for any readable pairing of address and merchant domain', () => {
+    const addresses = [
+      undefined,
+      '',
+      '  ',
+      'dropbox.com',
+      'https://short.example/abc123',
+      'seen in a video',
+      'co.uk',
+    ];
+    const domains = [
+      undefined,
+      'dropbox.com',
+      'www.dropbox.com',
+      'mystore.myshopify.com',
+      'myshopify.com',
+      'co.uk',
+    ];
+    const pairings = addresses.flatMap((resourceUrl) =>
+      domains.map((merchantDomain) => ({
+        ...(resourceUrl === undefined ? {} : { resourceUrl }),
+        ...(merchantDomain === undefined ? {} : { merchantDomain }),
+      })),
+    );
+    const canNameMerchant = (text: string | undefined) => deriveMerchantDomain(text ?? '').ok;
+
+    it.each(pairings)('%j opens as a form that keeps its merchant when saved', (pairing) => {
+      const record = sampleRecord(pairing);
+      expect(parseStoredState(stateWith(record))).toMatchObject({ status: 'ok' });
+
+      const result = validateRecordInput(recordToInput(record));
+
+      const address = record.resourceUrl?.trim() ?? '';
+      if (address !== '' && !canNameMerchant(address)) {
+        // The one thing to correct is an address that is not one, shown in its own field.
+        expect(!result.ok && Object.keys(result.errors)).toEqual(['resourceUrl']);
+      } else {
+        const hasMerchant = canNameMerchant(address) || canNameMerchant(record.merchantDomain);
+        expect(result).toMatchObject({ ok: true });
+        expect(result.ok && result.fields.merchantDomain !== undefined).toBe(hasMerchant);
+      }
+    });
+  });
 
   it('never reports the merchant domain of a record this build could have saved', () => {
     const saved = [

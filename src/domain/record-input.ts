@@ -160,20 +160,34 @@ export function recordWarnings(
  * edited (D-070) and follows the current list from that edit on.
  */
 export function recordToInput(record: PromoCodeRecord): RecordInput {
+  const resourceUrl = formAddress(record);
   return {
     promoCode: record.promoCode,
-    resourceUrl: record.resourceUrl ?? '',
-    merchantDomain: correctedDomain(record) ?? '',
+    resourceUrl,
+    merchantDomain: correctedDomain(record.merchantDomain, resourceUrl) ?? '',
     startDate: record.startDate === undefined ? '' : formatDisplayDate(record.startDate),
     expiryDate: record.expiryDate === undefined ? '' : formatDisplayDate(record.expiryDate),
     note: record.note ?? '',
   };
 }
 
-function correctedDomain(record: PromoCodeRecord): string | undefined {
+/**
+ * The saved address. A record with a merchant domain but no address is never
+ * written by the record store, yet it can be read, and a correction without an
+ * address is not a form that can be saved. Its domain is itself a valid
+ * address, so the form opens with that: saving it keeps the merchant, and with
+ * it any reminders. A domain that cannot name a merchant gives a blank address.
+ */
+function formAddress(record: PromoCodeRecord): string {
+  const address = record.resourceUrl ?? '';
+  if (address.trim() !== '') return address;
   const saved = record.merchantDomain;
+  return saved !== undefined && deriveMerchantDomain(saved).ok ? saved : '';
+}
+
+function correctedDomain(saved: string | undefined, address: string): string | undefined {
   if (saved === undefined) return undefined;
-  const fromAddress = deriveMerchantDomain(record.resourceUrl ?? '');
+  const fromAddress = deriveMerchantDomain(address);
   if (fromAddress.ok && fromAddress.domain === saved) return undefined;
   const onItsOwn = deriveMerchantDomain(saved);
   return onItsOwn.ok && onItsOwn.domain === saved ? saved : undefined;

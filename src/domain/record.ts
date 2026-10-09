@@ -13,7 +13,8 @@ export interface PromoCodeRecord {
   resourceUrl?: string;
   /**
    * Registrable domain, for example "dropbox.com": derived from resourceUrl, or
-   * the user's own correction of that (D-017). Absent when there is no resourceUrl.
+   * the user's own correction of that (D-017). The record store never saves one
+   * without a resourceUrl, but reading does not insist on that.
    */
   merchantDomain?: string;
   /** YYYY-MM-DD. */

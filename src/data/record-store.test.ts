@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sampleRecord } from '../../tests/support/sample-record';
 import { RECORD_LIMIT, type PromoCodeRecord } from '../domain/record';
-import type { RecordInput } from '../domain/record-input';
+import { recordToInput, type RecordInput } from '../domain/record-input';
 import { SCHEMA_VERSION, STATE_KEY } from '../domain/stored-state';
 import type { KeyValueStore } from '../platform/key-value-store';
 import type { Lock } from '../platform/lock';
@@ -392,6 +392,23 @@ describe('updateRecord', () => {
       await updateRecord(deps, 'saved-1', input({ resourceUrl, merchantDomain }));
 
       expect(await records()).toMatchObject([{ merchantDomain: 'example.com', notify: false }]);
+    });
+
+    it('survive an unchanged save of a record that has a merchant domain but no address', async () => {
+      // No write path stores this combination, but it can be read (review of PR #4).
+      const addressless = sampleRecord({
+        id: 'saved-1',
+        merchantDomain: 'dropbox.com',
+        notify: true,
+      });
+      const { deps, records } = setup(stateWith(addressless));
+
+      const result = await updateRecord(deps, 'saved-1', recordToInput(addressless));
+
+      expect(result).toMatchObject({ ok: true });
+      expect(await records()).toStrictEqual([
+        { ...addressless, resourceUrl: 'dropbox.com', updatedAt: moment(0) },
+      ]);
     });
 
     it('are never switched on by an edit', async () => {
