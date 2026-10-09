@@ -18,9 +18,15 @@ describe('manifest', () => {
   });
 
   // Spike build: activeTab (D-008), scripting for the content-script comparison
-  // (D-009), and optional site access that the user grants per merchant.
+  // (D-009), declarativeContent for the no-access icon highlight (D-061), and
+  // optional site access that the user grants per merchant.
   it('requests only the permissions the spike uses', () => {
-    expect(manifest.permissions).toEqual(['storage', 'activeTab', 'scripting']);
+    expect(manifest.permissions).toEqual([
+      'storage',
+      'activeTab',
+      'scripting',
+      'declarativeContent',
+    ]);
     expect(manifest.optional_host_permissions).toEqual(['*://*/*']);
   });
 

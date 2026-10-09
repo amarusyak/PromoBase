@@ -8,6 +8,8 @@ import {
   type ReminderMode,
   type Visits,
 } from './background-keys';
+import { domainFromPattern } from './domains';
+import { DelayedOpen, PassiveControls } from './Experiments';
 import { LOG_KEY, logEvent, type SpikeEvent } from './log';
 import { ManifestGuard } from './ManifestGuard';
 import { getLocal, getSession } from './store';
@@ -136,6 +138,12 @@ function LibraryPanel() {
       </fieldset>
 
       <AccessControls source="library" />
+
+      <DelayedOpen
+        domains={snapshot.grantedOrigins.flatMap((origin) => domainFromPattern(origin) ?? [])}
+      />
+
+      <PassiveControls />
 
       <dl className="spike__facts">
         <dt>Granted sites</dt>

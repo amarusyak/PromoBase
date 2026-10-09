@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { AccessControls } from './AccessControls';
-import { AUTO_OPEN_KEY, POPUP_PORT } from './background-keys';
+import { AUTO_OPEN_KEY, PASSIVE_KEY, POPUP_PORT } from './background-keys';
 import { domainFromPattern, hostMatchesDomain, hostOf, naiveDomain } from './domains';
 import { logEvent } from './log';
 import { ManifestGuard } from './ManifestGuard';
-import { getSession } from './store';
+import { getLocal, getSession } from './store';
 
 interface PopupContext {
   trigger: 'automatic' | 'click';
   host: string | undefined;
   matched: string | undefined;
+  highlighted: string | undefined;
 }
 
 /** Shows what the popup can see about the tab it opened on, and logs how it was opened. */
@@ -49,15 +50,19 @@ function PopupPanel() {
           : origins
               .map(domainFromPattern)
               .find((domain) => domain !== undefined && hostMatchesDomain(host, domain));
+      const passive = (await getLocal<string[]>(PASSIVE_KEY)) ?? [];
+      const highlighted =
+        host === undefined ? undefined : passive.find((domain) => hostMatchesDomain(host, domain));
       await logEvent('popup', 'popup:opened', {
         trigger,
         tabId: tab?.id ?? null,
         urlVisible: tab?.url !== undefined,
         host: host ?? null,
         matched: matched ?? null,
+        highlighted: highlighted ?? null,
         documentFocused: document.hasFocus(),
       });
-      setContext({ trigger, host, matched });
+      setContext({ trigger, host, matched, highlighted });
     })();
     return () => {
       port.disconnect();
@@ -79,6 +84,8 @@ function PopupPanel() {
         <dd>{context.host ?? 'address not visible to PromoBase'}</dd>
         <dt>Reminder match</dt>
         <dd>{context.matched ?? 'none'}</dd>
+        <dt>Icon highlight match</dt>
+        <dd>{context.highlighted ?? 'none'}</dd>
       </dl>
       <AccessControls
         source="popup"

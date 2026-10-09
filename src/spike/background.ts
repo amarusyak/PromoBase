@@ -9,7 +9,9 @@ import {
   COUNTERS_KEY,
   FOCUS_KEY,
   MODE_KEY,
+  PASSIVE_REQUEST,
   POPUP_PORT,
+  RESTORED_KEY,
   VISITS_KEY,
   type ReminderMode,
   type Visits,
@@ -17,6 +19,7 @@ import {
 import { BUILD_ID, BUILD_ID_REQUEST } from './build-id';
 import { domainFromPattern, hostMatchesDomain, hostOf } from './domains';
 import { logEvent } from './log';
+import { applyPassiveDomains } from './passive';
 import { describeError, getLocal, getSession } from './store';
 
 const CONTENT_SCRIPT_ID = 'spike-detect';
@@ -118,6 +121,31 @@ async function tryOpenPopup(
   );
 }
 
+/**
+ * D-060: a tab that was still loading or not yet loaded when the browser started
+ * is being restored from the previous session. Its restore load gets a badge,
+ * not a popup. The mark is used up by the tab's first handled event, so anything
+ * the person does in that tab afterwards is an ordinary visit.
+ */
+async function markRestoredTabs(): Promise<void> {
+  const tabs = await chrome.tabs.query({});
+  const restoring = tabs
+    .filter((tab) => tab.status !== 'complete')
+    .flatMap((tab) => (tab.id === undefined ? [] : [tab.id]));
+  await chrome.storage.session.set({ [RESTORED_KEY]: restoring });
+  await logEvent('sw', 'startup:restored-tabs-marked', {
+    openTabs: tabs.length,
+    restoring: restoring.length,
+  });
+}
+
+async function takeRestoredMark(tabId: number): Promise<boolean> {
+  const restoring = (await getSession<number[]>(RESTORED_KEY)) ?? [];
+  if (!restoring.includes(tabId)) return false;
+  await chrome.storage.session.set({ [RESTORED_KEY]: restoring.filter((id) => id !== tabId) });
+  return true;
+}
+
 async function endVisit(tabId: number, reason: string): Promise<void> {
   const visits = await readVisits();
   if (visits.reminded[tabId] === undefined && visits.pending[tabId] === undefined) return;
@@ -134,10 +162,19 @@ async function considerReminder(
   domain: string,
   active: boolean,
   trigger: string,
+  restored: boolean,
 ): Promise<void> {
   const visits = await readVisits();
   if (visits.reminded[tabId] === domain) {
     await logEvent('sw', 'reminder:skip-same-visit', { tabId, domain, trigger });
+    return;
+  }
+  if (restored) {
+    visits.reminded[tabId] = domain;
+    delete visits.pending[tabId];
+    await writeVisits(visits);
+    await setBadge(tabId, '1');
+    await logEvent('sw', 'reminder:badge-only-restored-tab', { tabId, domain, active, trigger });
     return;
   }
   const mode = (await getLocal<ReminderMode>(MODE_KEY)) ?? 'guarded';
@@ -177,6 +214,7 @@ async function handleTabUpdate(
 ): Promise<void> {
   if (!urlChanged && status !== 'complete') return;
   await exclusively(async () => {
+    const restored = await takeRestoredMark(tabId);
     const host = hostOf(tab.url);
     if (host === undefined) {
       await bumpCounter(
@@ -198,7 +236,7 @@ async function handleTabUpdate(
       await endVisit(tabId, 'navigated-to-a-visible-non-merchant-page');
       return;
     }
-    await considerReminder(tabId, tab.windowId, domain, tab.active, 'tabs.onUpdated');
+    await considerReminder(tabId, tab.windowId, domain, tab.active, 'tabs.onUpdated', restored);
   });
 }
 
@@ -319,6 +357,8 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 chrome.runtime.onStartup.addListener(() => {
+  // Takes the reminder lock at once, so the marks exist before any tab event is handled.
+  void exclusively(markRestoredTabs);
   void (async () => {
     await logEvent('sw', 'runtime.onStartup');
     await reconcileContentScripts('runtime.onStartup');
@@ -335,6 +375,23 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
     tabId: sender.tab?.id ?? null,
     host: message.host,
   });
+});
+
+// D-061: the log page asks the worker to (re)register the icon highlight rule,
+// because in the product the worker would own it.
+chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
+  if (typeof message !== 'object' || message === null) return;
+  const request = message as { type?: unknown; domains?: unknown };
+  if (request.type !== PASSIVE_REQUEST || !Array.isArray(request.domains)) return;
+  const domains = request.domains.filter((d): d is string => typeof d === 'string');
+  void applyPassiveDomains(domains).then(async (failure) => {
+    await logEvent('sw', failure === undefined ? 'passive:rule-set' : 'passive:rule-error', {
+      domains,
+      ...(failure === undefined ? {} : { message: failure }),
+    });
+    sendResponse(failure ?? null);
+  });
+  return true; // the answer is sent asynchronously
 });
 
 // The popup holds a port open, so its closing is observable here even when the
