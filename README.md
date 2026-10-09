@@ -2,7 +2,7 @@
 
 A Chrome extension for saving promo codes - especially the ones you pick up from creators and online content - and getting reminded of them when you visit the merchant's site.
 
-**Status:** early development. The extension loads and shows its popup. The logic for saving, editing and finding codes is in place; the screens that use it are not built yet.
+**Status:** early development. Codes can be saved from the popup and managed in the library. Reminders on the merchant's site are not built yet.
 
 ## What it does (first release)
 
