@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { patternForDomain } from './domains';
+import { domainFromInput, patternForDomain } from './domains';
 import { logEvent, type SpikeSource } from './log';
 import { describeError } from './store';
 
@@ -19,8 +19,11 @@ export function AccessControls({
   const [domain, setDomain] = useState(suggestedDomain);
   const [result, setResult] = useState('');
 
-  const cleaned = domain.trim().toLowerCase();
-  const origins = [patternForDomain(cleaned)];
+  // Whatever is typed (a host or a full address) is reduced to a domain first;
+  // nothing is sent to Chrome until that works.
+  const target = domainFromInput(domain);
+  const origins = target === undefined ? [] : [patternForDomain(target)];
+  const blocked = target === undefined;
 
   function report(variant: string, outcome: Promise<boolean>) {
     void outcome
@@ -88,17 +91,24 @@ export function AccessControls({
           onChange={(event) => setDomain(event.target.value)}
         />
       </label>
+      <p className="spike__target">
+        {target !== undefined
+          ? `Access will be requested for ${target} and its subdomains.`
+          : domain.trim() === ''
+            ? 'Type a site, for example wikipedia.org or a full address.'
+            : 'That does not look like a site address. Try something like wikipedia.org.'}
+      </p>
       <div className="spike__buttons">
-        <button type="button" disabled={cleaned === ''} onClick={requestDirect}>
+        <button type="button" disabled={blocked} onClick={requestDirect}>
           Request access
         </button>
-        <button type="button" disabled={cleaned === ''} onClick={requestAfterWrite}>
+        <button type="button" disabled={blocked} onClick={requestAfterWrite}>
           Request after a storage write
         </button>
-        <button type="button" disabled={cleaned === ''} onClick={requestAfterDelay}>
+        <button type="button" disabled={blocked} onClick={requestAfterDelay}>
           Request after 6 s
         </button>
-        <button type="button" disabled={cleaned === ''} onClick={removeAccess}>
+        <button type="button" disabled={blocked} onClick={removeAccess}>
           Remove access
         </button>
       </div>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  domainFromInput,
   domainFromPattern,
   hostMatchesDomain,
   hostOf,
@@ -37,6 +38,31 @@ describe('spike domain helpers', () => {
     [undefined, undefined],
   ])('hostOf(%s) is %s', (url, expected) => {
     expect(hostOf(url)).toBe(expected);
+  });
+
+  it.each([
+    ['wikipedia.org', 'wikipedia.org'],
+    ['en.wikipedia.org', 'wikipedia.org'],
+    ['https://en.wikipedia.org/', 'wikipedia.org'],
+    ['https://en.wikipedia.org/wiki/Coupon?x=1#top', 'wikipedia.org'],
+    ['  HTTP://WWW.Example.COM:8080/path  ', 'example.com'],
+    ['example.com.', 'example.com'],
+    ['react.dev/learn', 'react.dev'],
+  ])('reads %s as %s', (input, expected) => {
+    expect(domainFromInput(input)).toBe(expected);
+  });
+
+  it.each([
+    '',
+    '   ',
+    'test',
+    'localhost',
+    'https://',
+    'not a site',
+    'exa mple.com',
+    '*.example.com',
+  ])('reads no domain out of "%s"', (input) => {
+    expect(domainFromInput(input)).toBeUndefined();
   });
 
   it('guesses the last two labels', () => {

@@ -3,6 +3,7 @@ import { AccessControls } from './AccessControls';
 import { AUTO_OPEN_KEY, POPUP_PORT } from './background-keys';
 import { domainFromPattern, hostMatchesDomain, hostOf, naiveDomain } from './domains';
 import { logEvent } from './log';
+import { ManifestGuard } from './ManifestGuard';
 import { getSession } from './store';
 
 interface PopupContext {
@@ -13,6 +14,14 @@ interface PopupContext {
 
 /** Shows what the popup can see about the tab it opened on, and logs how it was opened. */
 export function SpikePopupPanel() {
+  return (
+    <ManifestGuard source="popup">
+      <PopupPanel />
+    </ManifestGuard>
+  );
+}
+
+function PopupPanel() {
   const [context, setContext] = useState<PopupContext>();
 
   useEffect(() => {

@@ -32,3 +32,23 @@ export function hostOf(url: string | undefined): string | undefined {
 export function naiveDomain(host: string): string {
   return host.split('.').slice(-2).join('.');
 }
+
+/**
+ * Reduces what a person typed (a bare host, or a full address with scheme, port
+ * and path) to the domain to request access for. Undefined when no real host
+ * can be read out of it. Spike only: uses naiveDomain.
+ */
+export function domainFromInput(input: string): string | undefined {
+  const text = input.trim().toLowerCase();
+  if (text === '') return undefined;
+  let host: string;
+  try {
+    host = new URL(text.includes('://') ? text : `http://${text}`).hostname;
+  } catch {
+    return undefined;
+  }
+  host = host.replace(/\.$/, '');
+  // At least two labels, made of the characters a host name can contain.
+  if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)) return undefined;
+  return naiveDomain(host);
+}

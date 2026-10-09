@@ -89,3 +89,15 @@
   font-size: 11px;
   white-space: pre;
 }
+
+.spike__target {
+  color: var(--muted);
+}
+
+.spike--blocked {
+  border: 2px solid var(--alert);
+}
+
+.spike--blocked code {
+  font-family: var(--font-code);
+}

@@ -9,6 +9,7 @@ import {
   type Visits,
 } from './background-keys';
 import { LOG_KEY, logEvent, type SpikeEvent } from './log';
+import { ManifestGuard } from './ManifestGuard';
 import { getLocal, getSession } from './store';
 
 interface Snapshot {
@@ -47,6 +48,14 @@ function exportText(snapshot: Snapshot): string {
 
 /** Settings, site access and the event log for the reminder spike. */
 export function SpikeLibraryPanel() {
+  return (
+    <ManifestGuard source="library">
+      <LibraryPanel />
+    </ManifestGuard>
+  );
+}
+
+function LibraryPanel() {
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [notice, setNotice] = useState('');
 
