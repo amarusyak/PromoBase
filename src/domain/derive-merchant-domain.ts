@@ -22,6 +22,9 @@ export type DomainResult = { ok: true; domain: string } | { ok: false; problem: 
 const NON_WEB_SCHEME =
   /^(mailto|tel|sms|javascript|data|file|about|blob|chrome|chrome-extension|view-source):/i;
 
+/** What a host can consist of once the URL parser has lower-cased and converted it. */
+const HOST_CHARACTERS = /^[a-z0-9.-]+$/;
+
 function problem(reason: DomainProblem): DomainResult {
   return { ok: false, problem: reason };
 }
@@ -58,6 +61,11 @@ export function deriveMerchantDomain(input: string): DomainResult {
   const host = url.hostname.replace(/\.$/, '');
   const parsed = parse(host, { allowPrivateDomains: true, extractHostname: false });
   if (parsed.isIp || host.startsWith('[')) return problem('ip-address');
+  // URL parsers disagree about characters a host must not contain: for a space,
+  // Chrome answers with "%20" in the host where Node refuses the address. Checking
+  // the characters here gives the same reason everywhere, before the host is
+  // looked at more closely.
+  if (!HOST_CHARACTERS.test(host)) return problem('not-a-web-address');
   if (!host.includes('.') || host === 'localhost' || host.endsWith('.localhost')) {
     return problem('local-name');
   }
