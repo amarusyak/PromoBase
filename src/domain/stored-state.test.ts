@@ -123,6 +123,13 @@ describe('parseStoredState', () => {
     ],
     ['has notify off with an empty merchantDomain', record({ merchantDomain: '' })],
     ['has notify off with a whitespace-only merchantDomain', record({ merchantDomain: '  ' })],
+    ['has an upper-case merchantDomain', record({ merchantDomain: 'Example.com' })],
+    ['has a padded merchantDomain', record({ merchantDomain: ' example.com ' })],
+    ['has a merchantDomain with a trailing dot', record({ merchantDomain: 'example.com.' })],
+    ['has a full address as merchantDomain', record({ merchantDomain: 'https://example.com' })],
+    ['has free text as merchantDomain', record({ merchantDomain: 'not a domain' })],
+    ['has a one-word merchantDomain', record({ merchantDomain: 'localhost' })],
+    ['has an IP address as merchantDomain', record({ merchantDomain: '192.168.0.1' })],
   ])('reports corrupt when a record %s', (_label, bad) => {
     const result = parseStoredState(stateWith(record({ id: 'good' }), bad));
     expect(result).toMatchObject({ status: 'corrupt' });
@@ -136,6 +143,17 @@ describe('parseStoredState', () => {
   ])('accepts notify %s', (_label, fields) => {
     expect(parseStoredState(stateWith(record(fields)))).toMatchObject({ status: 'ok' });
   });
+
+  // The read side checks spelling only. Whether a name is a registrable domain
+  // depends on the Public Suffix List, which changes; saved data must not.
+  it.each(['example.com', 'example.co.uk', 'mystore.myshopify.com', 'xn--mnchen-3ya.de'])(
+    'accepts %s as a stored merchantDomain',
+    (merchantDomain) => {
+      expect(parseStoredState(stateWith(record({ merchantDomain, notify: true })))).toMatchObject({
+        status: 'ok',
+      });
+    },
+  );
 
   it('reports corrupt when two records share an id', () => {
     const result = parseStoredState(stateWith(record(), record({ promoCode: 'OTHER' })));

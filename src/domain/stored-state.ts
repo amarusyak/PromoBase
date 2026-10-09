@@ -1,3 +1,4 @@
+import { isCanonicalMerchantDomain } from './merchant-domain';
 import type { PromoCodeRecord } from './record';
 
 /**
@@ -40,10 +41,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 /**
  * Checks field presence and types, plus the rules that reminder logic depends
- * on (PRD 8.1): a merchant domain is either absent or non-blank, and a record
- * can only ask for reminders when it has one. Whether the domain is in
- * canonical form is not checked here yet. Other business rules, such as date
- * formats and note length, are enforced when a record is written.
+ * on (PRD 8.1): a merchant domain is either absent or written in canonical form,
+ * and a record can only ask for reminders when it has one. Canonical form is a
+ * matter of spelling only; the Public Suffix List is not consulted here, so a
+ * list update can never make saved records unreadable. Other business rules,
+ * such as date formats and note length, are enforced when a record is written.
  */
 function describeRecordProblem(value: unknown): string | undefined {
   if (!isPlainObject(value)) return 'is not an object';
@@ -61,7 +63,9 @@ function describeRecordProblem(value: unknown): string | undefined {
   if (typeof value.notify !== 'boolean') return 'has no valid "notify"';
   // The loop above leaves merchantDomain either absent or a string.
   const merchantDomain = value.merchantDomain as string | undefined;
-  if (merchantDomain?.trim() === '') return 'has a blank "merchantDomain"';
+  if (merchantDomain !== undefined && !isCanonicalMerchantDomain(merchantDomain)) {
+    return 'has a "merchantDomain" that is not in canonical form';
+  }
   if (value.notify && merchantDomain === undefined) {
     return 'has "notify" on without a "merchantDomain"';
   }
