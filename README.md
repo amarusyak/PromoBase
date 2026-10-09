@@ -2,7 +2,7 @@
 
 A Chrome extension for saving promo codes - especially the ones you pick up from creators and online content - and getting reminded of them when you visit the merchant's site.
 
-**Status:** early development. The extension loads and shows its popup; saving codes is not implemented yet.
+**Status:** early development. The extension loads and shows its popup. The logic for saving, editing and finding codes is in place; the screens that use it are not built yet.
 
 ## What it does (first release)
 
@@ -48,17 +48,17 @@ npm test         # unit tests only
 
 Stack: TypeScript, Manifest V3, React with Vite.
 
-| Path             | Contents                                                    |
-| ---------------- | ----------------------------------------------------------- |
-| `src/domain`     | Types and pure logic, no Chrome APIs                        |
-| `src/platform`   | Thin adapters around Chrome APIs                            |
-| `src/data`       | Reading stored state                                        |
-| `src/ui`         | Code shared by the pages                                    |
-| `src/popup`      | Toolbar popup                                               |
-| `src/library`    | Full-page library                                           |
-| `src/background` | Service worker                                              |
-| `public`         | Manifest and icons, copied to `dist/` unchanged             |
-| `tests`          | Checks that span the project, such as the manifest contract |
+| Path             | Contents                                                  |
+| ---------------- | --------------------------------------------------------- |
+| `src/domain`     | Types and pure logic, no Chrome APIs                      |
+| `src/platform`   | Thin adapters around Chrome APIs                          |
+| `src/data`       | Reading stored state and changing saved records           |
+| `src/ui`         | Code shared by the pages                                  |
+| `src/popup`      | Toolbar popup                                             |
+| `src/library`    | Full-page library                                         |
+| `src/background` | Service worker                                            |
+| `public`         | Manifest and icons, copied to `dist/` unchanged           |
+| `tests`          | Checks that span the project, and helpers shared by tests |
 
 ## Reporting issues
 

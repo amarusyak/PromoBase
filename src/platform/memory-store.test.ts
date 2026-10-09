@@ -16,4 +16,25 @@ describe('memoryStore', () => {
 
     expect(await store.get('key')).toEqual({ records: ['A'] });
   });
+
+  it('returns what was set, replacing the earlier value', async () => {
+    const store = memoryStore({ key: 'old' });
+    await store.set('key', { records: ['A'] });
+    expect(await store.get('key')).toEqual({ records: ['A'] });
+  });
+
+  it('keeps keys apart', async () => {
+    const store = memoryStore({ other: 1 });
+    await store.set('key', 2);
+    expect(await store.get('other')).toBe(1);
+    expect(await store.get('key')).toBe(2);
+  });
+
+  it('stores a copy, so changing a value after setting it changes nothing', async () => {
+    const store = memoryStore();
+    const value = { records: ['A'] };
+    await store.set('key', value);
+    value.records.push('B');
+    expect(await store.get('key')).toEqual({ records: ['A'] });
+  });
 });
