@@ -5,11 +5,17 @@
 
 const LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
 const MAX_HOST_LENGTH = 253;
+// How the URL standard decides that a host "ends in a number": the last label is
+// all digits, or "0x" followed by hexadecimal digits (possibly none). Browsers
+// read every such host as an IPv4 address ("0x7f.0x1" is 127.0.0.1) or refuse
+// it outright ("example.0x1"), so it can never be a domain.
+const NUMERIC_LABEL = /^(\d+|0x[0-9a-f]*)$/;
 
 /**
  * Whether a string is written the way PromoBase stores host names: lower-case
  * ASCII (international names in their xn-- form), at least two labels of valid
- * characters, no trailing dot, and not an IP address.
+ * characters, no trailing dot, and not an IP address in any of the spellings a
+ * browser accepts (decimal, octal or hexadecimal parts, and shortened forms).
  *
  * This is a check of form only. It deliberately does not ask the Public Suffix
  * List whether the name is a registrable domain: that list changes with every
@@ -20,8 +26,7 @@ export function isCanonicalMerchantDomain(value: string): boolean {
   const labels = value.split('.');
   if (labels.length < 2) return false;
   if (!labels.every((label) => LABEL.test(label))) return false;
-  // A last label made only of digits is the end of an IPv4 address, not a domain.
-  return !/^\d+$/.test(labels.at(-1) ?? '');
+  return !NUMERIC_LABEL.test(labels.at(-1) ?? '');
 }
 
 /**

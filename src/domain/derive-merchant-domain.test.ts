@@ -66,6 +66,12 @@ const rejected: [input: string, problem: DomainProblem][] = [
   ['127.0.0.1:3000', 'ip-address'],
   ['http://[::1]:8080/', 'ip-address'],
   ['http://2130706433/', 'ip-address'],
+  ['0x7f.0x1', 'ip-address'],
+  ['http://0x7f.0x1/shop', 'ip-address'],
+  ['1.2.3.0x4', 'ip-address'],
+  ['127.1', 'ip-address'],
+  ['0177.0.0.1', 'ip-address'],
+  ['example.0x1', 'not-a-web-address'],
   // Local names
   ['localhost', 'local-name'],
   ['http://localhost:3000/shop', 'local-name'],

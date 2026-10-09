@@ -130,6 +130,10 @@ describe('parseStoredState', () => {
     ['has free text as merchantDomain', record({ merchantDomain: 'not a domain' })],
     ['has a one-word merchantDomain', record({ merchantDomain: 'localhost' })],
     ['has an IP address as merchantDomain', record({ merchantDomain: '192.168.0.1' })],
+    [
+      'has an IP address in hexadecimal spelling as merchantDomain',
+      record({ merchantDomain: '0x7f.0x1' }),
+    ],
   ])('reports corrupt when a record %s', (_label, bad) => {
     const result = parseStoredState(stateWith(record({ id: 'good' }), bad));
     expect(result).toMatchObject({ status: 'corrupt' });
