@@ -530,6 +530,112 @@ describe('an edit that leaves the address and the merchant domain alone', () => 
   });
 });
 
+describe('what a save with nothing changed rewrites', () => {
+  // The rule in three parts, each pinned below (review of PR #4):
+  // 1. A record this store saved changes in nothing but its last-edited time.
+  // 2. The address and the merchant domain of any readable record are kept as
+  //    stored (the describe block above).
+  // 3. Every other field is written the way the entry checks give it. For a record
+  //    no write path produces, the first save therefore tidies it, and from then
+  //    on rule 1 holds.
+
+  it.each<[string, Partial<RecordInput>]>([
+    ['only a code', {}],
+    [
+      'every field',
+      {
+        promoCode: 'Cloud25',
+        resourceUrl: 'https://www.dropbox.com/plans',
+        startDate: '01.10.2026',
+        expiryDate: '31.12.2026',
+        note: 'From the Tuesday newsletter',
+      },
+    ],
+    [
+      'text that was typed with spaces around it',
+      { promoCode: '  Save 10 Now ', note: '\tline one\nline two \n' },
+    ],
+    [
+      'a corrected merchant',
+      { resourceUrl: 'https://short.example/abc123', merchantDomain: 'www.dropbox.com' },
+    ],
+    ['an international name', { resourceUrl: 'https://www.münchen.de/', note: '🎉' }],
+    ['an already expired code', { expiryDate: '29.02.2024' }],
+  ])(
+    'changes only the last-edited time of a record this store saved: %s',
+    async (_label, typed) => {
+      const { deps, records } = setup();
+      const created = await createRecord(deps, input(typed));
+      if (!created.ok) throw new Error(`expected the record to be created, got ${created.problem}`);
+
+      await updateRecord(deps, 'new-1', recordToInput(created.record));
+
+      expect(await records()).toStrictEqual([{ ...created.record, updatedAt: moment(1) }]);
+    },
+  );
+
+  // Readable records that no write path produces, with what the first save makes of them.
+  const untidy: [string, Record<string, unknown>, Record<string, unknown>][] = [
+    ['spaces around the code', { promoCode: ' WELCOME10 ' }, { promoCode: 'WELCOME10' }],
+    ['spaces around the note', { note: ' saved ' }, { note: 'saved' }],
+    ['a line break after the note', { note: 'saved\n' }, { note: 'saved' }],
+    ['an empty note', { note: '' }, {}],
+    ['a note of spaces', { note: '   ' }, {}],
+    ['a key this build does not know', { legacy: 'value' }, {}],
+  ];
+
+  describe.each(untidy)('a stored record with %s', (_label, odd, tidied) => {
+    const base = sampleRecord({
+      id: 'saved-1',
+      // Not what the list derives today, and no address: part 2 of the rule applies too.
+      merchantDomain: 'www.dropbox.com',
+      notify: true,
+    });
+    const saved = { ...base, ...odd };
+    const expected = { ...base, ...tidied };
+
+    it('is readable and opens as a form that passes the checks', async () => {
+      const { deps } = setup(stateWith(saved));
+      expect(await loadStoredState(deps.store)).toMatchObject({ status: 'ok' });
+      expect(await updateRecord(deps, 'saved-1', recordToInput(saved))).toMatchObject({ ok: true });
+    });
+
+    it('is tidied by the first save, with merchant domain and reminders kept', async () => {
+      const { deps, records } = setup(stateWith(saved));
+
+      await updateRecord(deps, 'saved-1', recordToInput(saved));
+
+      expect(await records()).toStrictEqual([{ ...expected, updatedAt: moment(0) }]);
+    });
+
+    it('changes only its last-edited time on every save after that', async () => {
+      const { deps, records } = setup(stateWith(saved));
+      await updateRecord(deps, 'saved-1', recordToInput(saved));
+      const [afterFirst] = await records();
+      if (afterFirst === undefined) throw new Error('expected one record');
+
+      await updateRecord(deps, 'saved-1', recordToInput(afterFirst));
+
+      expect(await records()).toStrictEqual([{ ...afterFirst, updatedAt: moment(1) }]);
+    });
+  });
+
+  it('leaves the untidy fields of other records alone', async () => {
+    const untouched = {
+      ...sampleRecord({ id: 'saved-1', promoCode: ' PADDED ', note: '' }),
+      legacy: 'value',
+    } as PromoCodeRecord;
+    const { deps, stored } = setup(stateWith(untouched, sampleRecord({ id: 'saved-2' })));
+
+    await createRecord(deps, input({ promoCode: 'NEW' }));
+    await updateRecord(deps, 'saved-2', input({ promoCode: 'EDITED' }));
+    await deleteRecord(deps, 'saved-2');
+
+    expect(await stored()).toMatchObject({ records: [untouched, { promoCode: 'NEW' }] });
+    expect(((await stored()) as { records: unknown[] }).records[0]).toStrictEqual(untouched);
+  });
+});
+
 describe('deleteRecord', () => {
   it('removes that record only and reports which one it was (PB-011)', async () => {
     const [first, second, third] = savedRecords(3) as [

@@ -143,6 +143,9 @@ export async function createRecord(
  *
  * The address and the merchant domain are replaced only when the user changed
  * one of them on the form; otherwise both stay exactly as saved (fieldsForEdit).
+ * The record is otherwise built anew from the checked form, so the other
+ * fields are stored the way the checks give them and a key this build does
+ * not know is not carried over.
  *
  * Reminders stay on only while the merchant domain stays the same: the user
  * agreed to reminders on that site, not on whichever site the record points to

@@ -204,6 +204,13 @@ function correctedDomain(saved: string | undefined, address: string): string | u
  * domain is not what the current Public Suffix List would give (D-070, D-078).
  * Once the user changes either of the two, both come from the form.
  *
+ * Only these two fields are kept as stored. The code, the dates and the note
+ * are always written as the checks give them: for those, checking the same
+ * text twice gives the same result, no outside list is involved and nothing
+ * else hangs on the outcome. A record this build saved therefore comes back
+ * from an unchanged edit as it was. A stored code or note that no write path
+ * produces, such as one with spaces around it, is tidied by the first save.
+ *
  * The comparison is with the record as stored at the moment of saving. A form
  * opened before another tab changed the record counts as changed.
  */

@@ -571,6 +571,25 @@ describe('fieldsForEdit', () => {
     expect(edit(changes)).toStrictEqual({ promoCode: 'WELCOME10', ...expected, note: 'before' });
   });
 
+  it('writes the code and the note as the checks give them, even when the form was not touched', () => {
+    // Only the address and the merchant domain are kept as stored. A stored code or
+    // note that no write path produces is tidied by the first save.
+    const untidy = sampleRecord({
+      promoCode: ' WELCOME10 ',
+      merchantDomain: 'www.dropbox.com',
+      note: ' saved ',
+    });
+    const typed = recordToInput(untidy);
+    const checked = validateRecordInput(typed);
+
+    expect(typed).toMatchObject({ promoCode: ' WELCOME10 ', note: ' saved ' });
+    expect(checked.ok && fieldsForEdit(untidy, typed, checked.fields)).toStrictEqual({
+      promoCode: 'WELCOME10',
+      merchantDomain: 'www.dropbox.com',
+      note: 'saved',
+    });
+  });
+
   it('drops both when the user clears the address', () => {
     expect(edit({ resourceUrl: '' })).toStrictEqual({ promoCode: 'WELCOME10', note: 'before' });
   });
