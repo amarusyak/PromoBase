@@ -1,5 +1,6 @@
 import { RECORD_LIMIT, type PromoCodeRecord } from '../domain/record';
 import {
+  fieldsForEdit,
   validateRecordInput,
   type RecordInput,
   type RecordInputErrors,
@@ -140,6 +141,9 @@ export async function createRecord(
  * Replaces the editable fields of a saved record (PB-010). Its id, creation
  * time and place in the stored list stay the same. Allowed at the record limit.
  *
+ * The address and the merchant domain are replaced only when the user changed
+ * one of them on the form; otherwise both stay exactly as saved (fieldsForEdit).
+ *
  * Reminders stay on only while the merchant domain stays the same: the user
  * agreed to reminders on that site, not on whichever site the record points to
  * after an edit, so a changed or removed domain switches them off (PB-004).
@@ -155,10 +159,11 @@ export async function updateRecord(
   return changeRecords<Updated, NotFound>(deps, (records) => {
     const previous = records.find((record) => record.id === id);
     if (previous === undefined) return { ok: false, problem: 'not-found' };
+    const fields = fieldsForEdit(previous, input, checked.fields);
     const record: PromoCodeRecord = {
       id: previous.id,
-      ...checked.fields,
-      notify: previous.notify && checked.fields.merchantDomain === previous.merchantDomain,
+      ...fields,
+      notify: previous.notify && fields.merchantDomain === previous.merchantDomain,
       createdAt: previous.createdAt,
       updatedAt: deps.now().toISOString(),
     };

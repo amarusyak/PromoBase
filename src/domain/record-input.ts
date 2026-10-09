@@ -154,10 +154,9 @@ export function recordWarnings(
  *
  * The merchant domain is filled in only when the user corrected it, that is
  * when it differs from what the address gives and is a merchant domain in its
- * own right. In every other case it stays blank and is derived again on save.
- * One consequence, on purpose: if a Public Suffix List update changes what an
- * address derives to, the saved domain stays as it is until the record is
- * edited (D-070) and follows the current list from that edit on.
+ * own right. In every other case it stays blank. What an edit then stores is
+ * decided by fieldsForEdit, which keeps the saved domain until the user
+ * changes the address or the correction.
  */
 export function recordToInput(record: PromoCodeRecord): RecordInput {
   const resourceUrl = formAddress(record);
@@ -172,11 +171,12 @@ export function recordToInput(record: PromoCodeRecord): RecordInput {
 }
 
 /**
- * The saved address. A record with a merchant domain but no address is never
- * written by the record store, yet it can be read, and a correction without an
- * address is not a form that can be saved. Its domain is itself a valid
- * address, so the form opens with that: saving it keeps the merchant, and with
- * it any reminders. A domain that cannot name a merchant gives a blank address.
+ * The address the form opens with. A record with a merchant domain but no
+ * address is never written by the record store, yet it can be read, and a
+ * correction without an address is not a form that passes the checks. Its
+ * domain is itself a valid address, so the form opens with that. A domain that
+ * cannot name a merchant gives a blank address. Either way the record keeps
+ * what it has until the user changes the form, see fieldsForEdit.
  */
 function formAddress(record: PromoCodeRecord): string {
   const address = record.resourceUrl ?? '';
@@ -191,4 +191,39 @@ function correctedDomain(saved: string | undefined, address: string): string | u
   if (fromAddress.ok && fromAddress.domain === saved) return undefined;
   const onItsOwn = deriveMerchantDomain(saved);
   return onItsOwn.ok && onItsOwn.domain === saved ? saved : undefined;
+}
+
+/**
+ * What an edit of `saved` stores. `typed` is the form as submitted and
+ * `checked` is the outcome of validateRecordInput for it.
+ *
+ * While the form still shows the address and the merchant domain the record
+ * opened with, both are kept exactly as saved instead of being derived again.
+ * An edit of the code, the dates or the note therefore never changes which
+ * merchant a record belongs to, or drops its reminders, even when the saved
+ * domain is not what the current Public Suffix List would give (D-070, D-078).
+ * Once the user changes either of the two, both come from the form.
+ *
+ * The comparison is with the record as stored at the moment of saving. A form
+ * opened before another tab changed the record counts as changed.
+ */
+export function fieldsForEdit(
+  saved: PromoCodeRecord,
+  typed: RecordInput,
+  checked: RecordFields,
+): RecordFields {
+  const opened = recordToInput(saved);
+  const merchantChanged =
+    typed.resourceUrl.trim() !== opened.resourceUrl.trim() ||
+    typed.merchantDomain.trim() !== opened.merchantDomain.trim();
+  if (merchantChanged) return checked;
+
+  return {
+    promoCode: checked.promoCode,
+    ...(saved.resourceUrl === undefined ? {} : { resourceUrl: saved.resourceUrl }),
+    ...(saved.merchantDomain === undefined ? {} : { merchantDomain: saved.merchantDomain }),
+    ...(checked.startDate === undefined ? {} : { startDate: checked.startDate }),
+    ...(checked.expiryDate === undefined ? {} : { expiryDate: checked.expiryDate }),
+    ...(checked.note === undefined ? {} : { note: checked.note }),
+  };
 }

@@ -394,23 +394,6 @@ describe('updateRecord', () => {
       expect(await records()).toMatchObject([{ merchantDomain: 'example.com', notify: false }]);
     });
 
-    it('survive an unchanged save of a record that has a merchant domain but no address', async () => {
-      // No write path stores this combination, but it can be read (review of PR #4).
-      const addressless = sampleRecord({
-        id: 'saved-1',
-        merchantDomain: 'dropbox.com',
-        notify: true,
-      });
-      const { deps, records } = setup(stateWith(addressless));
-
-      const result = await updateRecord(deps, 'saved-1', recordToInput(addressless));
-
-      expect(result).toMatchObject({ ok: true });
-      expect(await records()).toStrictEqual([
-        { ...addressless, resourceUrl: 'dropbox.com', updatedAt: moment(0) },
-      ]);
-    });
-
     it('are never switched on by an edit', async () => {
       const quiet = sampleRecord({ id: 'saved-1' });
       const { deps, records } = setup(stateWith(quiet));
@@ -419,6 +402,131 @@ describe('updateRecord', () => {
 
       expect(await records()).toMatchObject([{ merchantDomain: 'dropbox.com', notify: false }]);
     });
+  });
+});
+
+describe('an edit that leaves the address and the merchant domain alone', () => {
+  // Readable records whose saved merchant domain is not what the form would derive
+  // today. Only the first two can come from the record store; the others stand for
+  // a Public Suffix List update since the save, or for data no write path produces
+  // (review of PR #4). All have reminders on, the thing an edit must not lose.
+  const cases: [string, Partial<PromoCodeRecord>][] = [
+    [
+      'an ordinary record',
+      { resourceUrl: 'https://www.dropbox.com/plans', merchantDomain: 'dropbox.com' },
+    ],
+    [
+      'a corrected merchant',
+      { resourceUrl: 'https://short.example/abc123', merchantDomain: 'dropbox.com' },
+    ],
+    [
+      'a domain the list now reads as a subdomain',
+      { resourceUrl: 'https://shop.example.com/', merchantDomain: 'shop.example.com' },
+    ],
+    [
+      'a domain the list now reads as a shared suffix',
+      { resourceUrl: 'https://mystore.myshopify.com/', merchantDomain: 'myshopify.com' },
+    ],
+    ['no address', { merchantDomain: 'dropbox.com' }],
+    ['no address and a subdomain as the merchant', { merchantDomain: 'www.dropbox.com' }],
+    ['no address and a shared suffix as the merchant', { merchantDomain: 'co.uk' }],
+    ['a blank address', { resourceUrl: '', merchantDomain: 'dropbox.com' }],
+  ];
+
+  describe.each(cases)('%s', (_label, merchant) => {
+    const saved = sampleRecord({ id: 'saved-1', notify: true, ...merchant });
+
+    it('stores the record exactly as it was when nothing is changed', async () => {
+      const { deps, records } = setup(stateWith(saved));
+
+      const result = await updateRecord(deps, 'saved-1', recordToInput(saved));
+
+      expect(result).toMatchObject({ ok: true });
+      // Exact address, exact merchant domain, reminders still on, no key added or removed.
+      expect(await records()).toStrictEqual([{ ...saved, updatedAt: moment(0) }]);
+    });
+
+    it('keeps address, merchant domain and reminders when another field is edited', async () => {
+      const { deps, records } = setup(stateWith(saved));
+
+      await updateRecord(deps, 'saved-1', {
+        ...recordToInput(saved),
+        promoCode: 'EDITED',
+        expiryDate: '31.12.2026',
+        note: 'edited',
+      });
+
+      expect(await records()).toStrictEqual([
+        {
+          ...saved,
+          promoCode: 'EDITED',
+          expiryDate: '2026-12-31',
+          note: 'edited',
+          updatedAt: moment(0),
+        },
+      ]);
+    });
+  });
+
+  it('does not take spaces around the address for a change', async () => {
+    const saved = sampleRecord({ id: 'saved-1', merchantDomain: 'www.dropbox.com', notify: true });
+    const { deps, records } = setup(stateWith(saved));
+    const opened = recordToInput(saved);
+
+    await updateRecord(deps, 'saved-1', { ...opened, resourceUrl: `  ${opened.resourceUrl} ` });
+
+    expect(await records()).toStrictEqual([{ ...saved, updatedAt: moment(0) }]);
+  });
+
+  it.each([
+    [
+      'the address',
+      { resourceUrl: 'www.dropbox.com/plans' },
+      { resourceUrl: 'www.dropbox.com/plans', merchantDomain: 'dropbox.com' },
+    ],
+    [
+      'the merchant domain',
+      { merchantDomain: 'example.com' },
+      { resourceUrl: 'www.dropbox.com', merchantDomain: 'example.com' },
+    ],
+  ])(
+    'derives the merchant again, and switches reminders off, once the user changes %s (D-075)',
+    async (_label, change, expected) => {
+      const saved = sampleRecord({
+        id: 'saved-1',
+        merchantDomain: 'www.dropbox.com',
+        notify: true,
+      });
+      const { deps, records } = setup(stateWith(saved));
+
+      await updateRecord(deps, 'saved-1', { ...recordToInput(saved), ...change });
+
+      expect(await records()).toStrictEqual([
+        { ...saved, ...expected, notify: false, updatedAt: moment(0) },
+      ]);
+    },
+  );
+
+  it('compares with the record as stored now, not as it was when the form was opened', async () => {
+    // The form was opened on the first version; another tab then changed the address.
+    const opened = sampleRecord({
+      id: 'saved-1',
+      resourceUrl: 'dropbox.com',
+      merchantDomain: 'dropbox.com',
+    });
+    const changedElsewhere = {
+      ...opened,
+      resourceUrl: 'example.com',
+      merchantDomain: 'example.com',
+    };
+    const { deps, records } = setup(stateWith(changedElsewhere));
+
+    await updateRecord(deps, 'saved-1', { ...recordToInput(opened), note: 'from the stale form' });
+
+    // The stale form differs from what is stored, so it counts as a change and wins as a whole.
+    expect(await records()).toMatchObject([
+      { resourceUrl: 'dropbox.com', merchantDomain: 'dropbox.com', note: 'from the stale form' },
+    ]);
   });
 });
 

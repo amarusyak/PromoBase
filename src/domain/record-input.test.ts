@@ -8,6 +8,7 @@ import {
   type PromoCodeRecord,
 } from './record';
 import {
+  fieldsForEdit,
   recordToInput,
   recordWarnings,
   validateRecordInput,
@@ -427,30 +428,18 @@ describe('recordToInput', () => {
       ['a site on a shared platform', 'mystore.myshopify.com', 'mystore.myshopify.com'],
       ['an international name', 'xn--mnchen-3ya.de', 'xn--mnchen-3ya.de'],
       // Canonical by spelling, which is all the read side asks for (D-070).
-      ['a domain the suffix list reads as a subdomain', 'www.dropbox.com', 'dropbox.com'],
-    ])('can be saved unchanged and keeps the merchant: %s', (_label, merchantDomain, expected) => {
-      const record = sampleRecord({ merchantDomain });
-      expect(parseStoredState(stateWith(record))).toMatchObject({ status: 'ok' });
-
-      expect(validateRecordInput(recordToInput(record))).toStrictEqual({
-        ok: true,
-        fields: { promoCode: 'WELCOME10', resourceUrl: merchantDomain, merchantDomain: expected },
-      });
-    });
-
-    it.each([
-      ['a shared suffix', 'co.uk'],
-      ['a platform suffix', 'github.io'],
-    ])('opens blank when the domain cannot name a merchant: %s', (_label, merchantDomain) => {
+      ['a domain the suffix list reads as a subdomain', 'www.dropbox.com', 'www.dropbox.com'],
+      // Cannot name a merchant, so it cannot serve as the address either.
+      ['a shared suffix', 'co.uk', ''],
+      ['a platform suffix', 'github.io', ''],
+    ])('opens as a form that passes the checks: %s', (_label, merchantDomain, address) => {
       const record = sampleRecord({ merchantDomain });
       expect(parseStoredState(stateWith(record))).toMatchObject({ status: 'ok' });
 
       const reopened = recordToInput(record);
-      expect(reopened).toMatchObject({ resourceUrl: '', merchantDomain: '' });
-      expect(validateRecordInput(reopened)).toStrictEqual({
-        ok: true,
-        fields: { promoCode: 'WELCOME10' },
-      });
+
+      expect(reopened).toMatchObject({ resourceUrl: address, merchantDomain: '' });
+      expect(validateRecordInput(reopened)).toMatchObject({ ok: true });
     });
   });
 
@@ -482,20 +471,22 @@ describe('recordToInput', () => {
     );
     const canNameMerchant = (text: string | undefined) => deriveMerchantDomain(text ?? '').ok;
 
-    it.each(pairings)('%j opens as a form that keeps its merchant when saved', (pairing) => {
+    it.each(pairings)('%j is stored as it was by an edit that leaves both alone', (pairing) => {
       const record = sampleRecord(pairing);
       expect(parseStoredState(stateWith(record))).toMatchObject({ status: 'ok' });
 
-      const result = validateRecordInput(recordToInput(record));
+      const reopened = recordToInput(record);
+      const result = validateRecordInput(reopened);
 
       const address = record.resourceUrl?.trim() ?? '';
       if (address !== '' && !canNameMerchant(address)) {
         // The one thing to correct is an address that is not one, shown in its own field.
         expect(!result.ok && Object.keys(result.errors)).toEqual(['resourceUrl']);
       } else {
-        const hasMerchant = canNameMerchant(address) || canNameMerchant(record.merchantDomain);
         expect(result).toMatchObject({ ok: true });
-        expect(result.ok && result.fields.merchantDomain !== undefined).toBe(hasMerchant);
+        const fields = result.ok ? fieldsForEdit(record, reopened, result.fields) : undefined;
+        // toStrictEqual: an absent address or domain must stay absent, not become blank.
+        expect(fields).toStrictEqual({ promoCode: 'WELCOME10', ...pairing });
       }
     });
   });
@@ -511,5 +502,76 @@ describe('recordToInput', () => {
       const result = validateRecordInput(recordToInput(sampleRecord(fields)));
       expect(result).toStrictEqual({ ok: true, fields });
     }
+  });
+});
+
+describe('fieldsForEdit', () => {
+  const saved = sampleRecord({
+    resourceUrl: 'https://shop.example.com/',
+    // Not what the address gives today: stands in for a suffix list update since the save.
+    merchantDomain: 'shop.example.com',
+    note: 'before',
+  });
+
+  function edit(changes: Partial<RecordInput>) {
+    const typed = { ...recordToInput(saved), ...changes };
+    const checked = validateRecordInput(typed);
+    if (!checked.ok) throw new Error(`expected valid input, got ${JSON.stringify(checked.errors)}`);
+    return fieldsForEdit(saved, typed, checked.fields);
+  }
+
+  it('keeps the saved address and merchant domain while the form still shows both as opened', () => {
+    expect(edit({})).toStrictEqual({
+      promoCode: 'WELCOME10',
+      resourceUrl: 'https://shop.example.com/',
+      merchantDomain: 'shop.example.com',
+      note: 'before',
+    });
+  });
+
+  it('takes every other field from the form', () => {
+    expect(
+      edit({ promoCode: ' NEW5 ', startDate: '01.11.2026', expiryDate: '30.11.2026', note: '' }),
+    ).toStrictEqual({
+      promoCode: 'NEW5',
+      resourceUrl: 'https://shop.example.com/',
+      merchantDomain: 'shop.example.com',
+      startDate: '2026-11-01',
+      expiryDate: '2026-11-30',
+    });
+  });
+
+  it.each([
+    ['spaces around the address', { resourceUrl: '  https://shop.example.com/ ' }],
+    ['spaces in the empty correction', { merchantDomain: '  ' }],
+  ])('does not take %s for a change', (_label, changes) => {
+    expect(edit(changes)).toMatchObject({
+      resourceUrl: 'https://shop.example.com/',
+      merchantDomain: 'shop.example.com',
+    });
+  });
+
+  it.each([
+    [
+      'the address',
+      { resourceUrl: 'https://shop.example.com/sale' },
+      { resourceUrl: 'https://shop.example.com/sale', merchantDomain: 'example.com' },
+    ],
+    [
+      'the case of the address',
+      { resourceUrl: 'https://SHOP.example.com/' },
+      { resourceUrl: 'https://SHOP.example.com/', merchantDomain: 'example.com' },
+    ],
+    [
+      'the merchant domain',
+      { merchantDomain: 'dropbox.com' },
+      { resourceUrl: 'https://shop.example.com/', merchantDomain: 'dropbox.com' },
+    ],
+  ])('derives both from the form once the user changes %s', (_label, changes, expected) => {
+    expect(edit(changes)).toStrictEqual({ promoCode: 'WELCOME10', ...expected, note: 'before' });
+  });
+
+  it('drops both when the user clears the address', () => {
+    expect(edit({ resourceUrl: '' })).toStrictEqual({ promoCode: 'WELCOME10', note: 'before' });
   });
 });
