@@ -242,10 +242,12 @@ function CodeTicket({
 }: CodeTicketProps) {
   const keep = useRef<HTMLButtonElement>(null);
 
-  // The question appears where Delete was; put the focus on the safe answer.
+  // The question appears where Delete was; put the focus on the safe answer. If
+  // it opens while another row's delete is still under way, the answer is
+  // disabled and cannot take the focus yet, so this runs again once it can.
   useEffect(() => {
-    if (confirming) keep.current?.focus();
-  }, [confirming]);
+    if (confirming && !deleting) keep.current?.focus();
+  }, [confirming, deleting]);
 
   return (
     <li className={`code-ticket code-ticket--${row.status}`}>
