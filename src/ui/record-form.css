@@ -1,0 +1,120 @@
+.record-form {
+  display: grid;
+  gap: 10px;
+}
+
+.field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.field__label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.field label {
+  font-weight: 600;
+}
+
+.field__input {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+.field__input::placeholder {
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+.field__input--code {
+  font-family: var(--font-code);
+  font-size: 1.1em;
+}
+
+/* Not resizable: a note is at most 140 characters, and dragging the box taller
+   only pushes the rest of a small popup out of view. Longer notes scroll inside. */
+textarea.field__input {
+  display: block;
+  resize: none;
+}
+
+.field__input[aria-invalid='true'] {
+  border-color: var(--alert);
+  border-width: 2px;
+  padding: 6px 8px;
+}
+
+.field__error {
+  color: var(--alert);
+  font-weight: 600;
+}
+
+.field__site,
+.field__count {
+  font-size: 0.92em;
+}
+
+/* The site being corrected: one line, where the "Site:" line was. */
+.field__correction {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92em;
+}
+
+.field__correction label {
+  font-weight: 400;
+}
+
+.field__correction .field__input {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 8px;
+}
+
+.field__correction .field__input[aria-invalid='true'] {
+  padding: 2px 7px;
+}
+
+.field__site strong {
+  overflow-wrap: anywhere;
+}
+
+.record-form__optional {
+  padding-top: 6px;
+  border-top: 1px dashed var(--line);
+  font-size: 0.92em;
+}
+
+.record-form__dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.record-form__warnings {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 10px 8px 12px;
+  border-left: 3px solid var(--marker);
+  background: var(--wash);
+  list-style: none;
+}
+
+.record-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}

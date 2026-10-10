@@ -37,4 +37,40 @@ describe('memoryStore', () => {
     value.records.push('B');
     expect(await store.get('key')).toEqual({ records: ['A'] });
   });
+
+  it('forgets a removed key and leaves the others', async () => {
+    const store = memoryStore({ key: 1, other: 2 });
+    await store.remove('key');
+    expect(await store.get('key')).toBeUndefined();
+    expect(await store.get('other')).toBe(2);
+  });
+
+  it('tells subscribers of a key when it is set or removed, and only then', async () => {
+    const store = memoryStore({ key: 1 });
+    let calls = 0;
+    store.subscribe('key', () => {
+      calls += 1;
+    });
+
+    await store.set('other', 1);
+    expect(calls).toBe(0);
+    await store.set('key', 2);
+    expect(calls).toBe(1);
+    await store.remove('key');
+    expect(calls).toBe(2);
+    await store.remove('key');
+    expect(calls).toBe(2);
+  });
+
+  it('stops telling a subscriber that has unsubscribed', async () => {
+    const store = memoryStore();
+    let calls = 0;
+    const unsubscribe = store.subscribe('key', () => {
+      calls += 1;
+    });
+    await store.set('key', 1);
+    unsubscribe();
+    await store.set('key', 2);
+    expect(calls).toBe(1);
+  });
 });

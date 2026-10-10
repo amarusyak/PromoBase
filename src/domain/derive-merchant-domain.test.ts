@@ -47,6 +47,12 @@ const rejected: [input: string, problem: DomainProblem][] = [
   ['https://*.dropbox.com', 'not-a-web-address'],
   ['*.dropbox.com', 'not-a-web-address'],
   ['drop_box.com', 'not-a-web-address'],
+  // No dot, and a character a host cannot contain: the character decides, in
+  // every URL parser. Chrome's keeps a space in the host as "%20"; Node's refuses it.
+  ['drop_box', 'not-a-web-address'],
+  ['seen in a video', 'not-a-web-address'],
+  ['seen%20in%20a%20video', 'not-a-web-address'],
+  ['two words', 'not-a-web-address'],
   ['https://dropbox..com', 'not-a-web-address'],
   ['-dropbox.com', 'not-a-web-address'],
   // Other schemes

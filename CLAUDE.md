@@ -23,6 +23,9 @@ Requirements (PB-xxx) are in the PRD and decisions (D-xxx) in `claude/decisions.
 - Saved records are changed only through `src/data/record-store.ts`, which holds the state lock for the whole read-change-write. Nothing else writes to the store.
 - What a person may enter is checked in `src/domain/record-input.ts`. The read-side check in `stored-state.ts` stays limited to what the logic depends on, so a stricter entry rule never makes saved data unreadable.
 - The service worker must not import `src/domain/derive-merchant-domain.ts` or anything that imports it (`record-input`, `record-store`): that pulls in the Public Suffix List, about 300 kB.
+- React components stay thin. What they show is worked out in plain modules under `src/ui` (`messages`, `record-view`, `date-mask`, `draft`), which have unit tests; the components themselves are checked by driving the built extension in a browser.
+- Every sentence shown for a problem lives in `src/ui/messages.ts`, keyed by the reason codes of the logic.
+- The popup must stay under Chrome's 600px height limit in its normal state.
 - The extension makes no network requests and loads no remote fonts or scripts.
 - Never commit secrets, signing keys or real promo codes.
 

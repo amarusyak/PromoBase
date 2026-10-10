@@ -9,6 +9,7 @@ import {
 } from './record';
 import {
   fieldsForEdit,
+  previewMerchantDomain,
   recordToInput,
   recordWarnings,
   validateRecordInput,
@@ -592,5 +593,75 @@ describe('fieldsForEdit', () => {
 
   it('drops both when the user clears the address', () => {
     expect(edit({ resourceUrl: '' })).toStrictEqual({ promoCode: 'WELCOME10', note: 'before' });
+  });
+});
+
+describe('previewMerchantDomain', () => {
+  const typed = (resourceUrl: string, merchantDomain = '') => ({ resourceUrl, merchantDomain });
+
+  it.each([
+    ['a full address', typed('https://www.dropbox.com/plans'), 'dropbox.com'],
+    ['a bare site name', typed('Shop.Example.co.uk'), 'example.co.uk'],
+    [
+      'a correction next to the address',
+      typed('https://short.example/abc', 'www.dropbox.com'),
+      'dropbox.com',
+    ],
+  ])('shows the domain a save would store for %s', (_label, input, expected) => {
+    expect(previewMerchantDomain(input)).toBe(expected);
+  });
+
+  it.each([
+    ['no address', typed('')],
+    ['an address still being typed', typed('drop')],
+    ['an address that is not one', typed('seen in a video')],
+    ['a shared suffix', typed('co.uk')],
+    ['a correction that is not a site', typed('https://short.example/abc', 'the shoe shop')],
+    ['a correction without an address', typed('', 'dropbox.com')],
+  ])('shows nothing for %s', (_label, input) => {
+    expect(previewMerchantDomain(input)).toBeUndefined();
+  });
+
+  it('looks at the address and the correction only, whatever else the form holds', () => {
+    // Found by driving the real form: with the code still blank, no site was shown.
+    const unfinished: RecordInput = {
+      promoCode: '',
+      resourceUrl: 'https://www.dropbox.com/plans',
+      merchantDomain: '',
+      startDate: '31.02.2026',
+      expiryDate: 'soon',
+      note: 'n'.repeat(500),
+    };
+    expect(validateRecordInput(unfinished).ok).toBe(false);
+    expect(previewMerchantDomain(unfinished)).toBe('dropbox.com');
+  });
+
+  it('agrees with what validation stores', () => {
+    const input = typed('https://mystore.myshopify.com/cart');
+    const checked = validateRecordInput({ ...recordToInput(sampleRecord()), ...input });
+    expect(checked.ok && checked.fields.merchantDomain).toBe(previewMerchantDomain(input));
+  });
+
+  describe('while editing', () => {
+    // Saved before a suffix list update: not what the address gives today.
+    const saved = sampleRecord({
+      resourceUrl: 'https://shop.example.com/',
+      merchantDomain: 'shop.example.com',
+    });
+
+    it('shows the saved domain while the address is as it was opened', () => {
+      const opened = recordToInput(saved);
+      expect(previewMerchantDomain(opened, saved)).toBe('shop.example.com');
+    });
+
+    it('shows the newly derived domain once the address is changed', () => {
+      expect(previewMerchantDomain(typed('https://shop.example.com/sale'), saved)).toBe(
+        'example.com',
+      );
+    });
+
+    it('shows nothing once the address is cleared', () => {
+      expect(previewMerchantDomain(typed(''), saved)).toBeUndefined();
+    });
   });
 });

@@ -20,17 +20,37 @@ describe('summarizeState', () => {
   it('treats a fresh install as zero saved codes', () => {
     expect(summarizeState({ status: 'empty' })).toEqual({
       kind: 'ready',
+      records: [],
       savedCount: 0,
       capacityText: '0 of 100 codes saved',
+      atLimit: false,
     });
   });
 
   it.each([0, 1, 99, RECORD_LIMIT])('shows the count against the limit for %i records', (count) => {
-    expect(summarizeState(okWith(count))).toEqual({
+    expect(summarizeState(okWith(count))).toMatchObject({
       kind: 'ready',
       savedCount: count,
       capacityText: `${count} of 100 codes saved`,
     });
+  });
+
+  it('hands on the records in stored order', () => {
+    const loaded = okWith(3);
+    const summary = summarizeState(loaded);
+    expect(summary.kind === 'ready' && summary.records.map((record) => record.id)).toEqual([
+      'id-0',
+      'id-1',
+      'id-2',
+    ]);
+  });
+
+  it.each([
+    [RECORD_LIMIT - 1, false],
+    [RECORD_LIMIT, true],
+    [RECORD_LIMIT + 1, true],
+  ])('with %i records, reports the limit as reached: %s (PB-003)', (count, atLimit) => {
+    expect(summarizeState(okWith(count))).toMatchObject({ atLimit });
   });
 
   it.each<LoadResult>([

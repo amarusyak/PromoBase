@@ -1,3 +1,4 @@
+import { readableDomain } from './readable-domain';
 import type { PromoCodeRecord } from './record';
 import { recordStatus, type RecordStatus } from './record-status';
 
@@ -22,7 +23,9 @@ export function sortRecords(records: readonly PromoCodeRecord[], today: string):
 
 /**
  * Records whose code, merchant domain or note contains the query, ignoring
- * case (PB-009). A blank query matches everything. Order is kept.
+ * case (PB-009). An international merchant name is found by its readable
+ * spelling as well as by its stored one. A blank query matches everything.
+ * Order is kept.
  */
 export function searchRecords(
   records: readonly PromoCodeRecord[],
@@ -30,9 +33,11 @@ export function searchRecords(
 ): PromoCodeRecord[] {
   const needle = query.trim().toLowerCase();
   if (needle === '') return [...records];
-  return records.filter((record) =>
-    [record.promoCode, record.merchantDomain, record.note].some(
+  return records.filter((record) => {
+    const domain = record.merchantDomain;
+    const readable = domain === undefined ? undefined : readableDomain(domain);
+    return [record.promoCode, domain, readable, record.note].some(
       (text) => text !== undefined && text.toLowerCase().includes(needle),
-    ),
-  );
+    );
+  });
 }

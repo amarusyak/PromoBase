@@ -5,17 +5,29 @@ body {
 
 .popup {
   display: grid;
-  gap: 14px;
-  padding: 14px 16px 16px;
+  gap: 10px;
+  padding: 12px 16px 12px;
 }
 
 .popup__header {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
 }
 
 .popup__header h1 {
   font-size: 15px;
+}
+
+.popup__add {
+  display: grid;
+  gap: 8px;
+}
+
+/* Chrome caps a popup at 600px in height; the form is kept just below that. */
+.popup .record-form {
+  gap: 8px;
 }
 
 .ticket {
@@ -32,6 +44,27 @@ body {
   font-size: 14px;
 }
 
+.popup__saved-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  font-size: 17px;
+}
+
+.popup__saved-code .button {
+  font-size: 13px;
+}
+
+.popup__saved-code .copy-status:empty {
+  display: none;
+}
+
+.popup__saved-code .copy-status {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+
 .popup__summary {
   display: flex;
   justify-content: space-between;
@@ -40,7 +73,7 @@ body {
 }
 
 .popup__notice {
-  padding-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid var(--line);
   font-size: 12px;
 }

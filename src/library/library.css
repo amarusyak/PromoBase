@@ -4,8 +4,8 @@ body {
 
 .library {
   display: grid;
-  gap: 20px;
-  max-width: 720px;
+  gap: 18px;
+  max-width: 760px;
   margin: 0 auto;
   padding: 32px 24px 48px;
 }
@@ -24,10 +24,228 @@ body {
   font-size: 16px;
 }
 
+.library__bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.library__search {
+  display: grid;
+  gap: 4px;
+}
+
+.library__search p:empty {
+  display: none;
+}
+
+.library__notice {
+  margin-left: 14px;
+  font-weight: 600;
+}
+
+.library__list {
+  display: grid;
+  gap: 22px;
+}
+
+.library__list:focus {
+  outline: none;
+}
+
+.library__group {
+  margin-bottom: 8px;
+}
+
+.library__group .muted {
+  font-weight: 400;
+}
+
+.library__rows {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library__empty {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.library__empty.ticket {
+  --bite: 11px;
+  max-width: 62ch;
+  padding: 20px 28px;
+  border-radius: 12px;
+  background: var(--wash);
+}
+
+/*
+ * A saved code as a ticket. The details sit on the body; the code sits on a
+ * stub that looks as if it could be torn off along the dashed line, with a
+ * notch punched where the line meets each edge.
+ */
+.code-ticket {
+  --stub: 230px;
+  --bite: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--stub);
+  border-radius: 10px;
+  background: var(--wash);
+  mask:
+    radial-gradient(
+        circle var(--bite) at calc(100% - var(--stub)) 0,
+        #0000 calc(100% - 0.5px),
+        #000
+      )
+      top / 100% 51% no-repeat,
+    radial-gradient(
+        circle var(--bite) at calc(100% - var(--stub)) 100%,
+        #0000 calc(100% - 0.5px),
+        #000
+      )
+      bottom / 100% 51% no-repeat;
+}
+
+.code-ticket__main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: start;
+  gap: 4px 12px;
+  padding: 14px 18px;
+}
+
+.code-ticket__merchant {
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+/* Without a status tag beside it, the first line takes the full width. */
+.code-ticket__merchant:only-child,
+.code-ticket__merchant:not(:has(+ .status)) {
+  grid-column: 1 / -1;
+}
+
+.code-ticket__note,
+.code-ticket__dates,
+.code-ticket__actions {
+  grid-column: 1 / -1;
+}
+
+.code-ticket__note {
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.code-ticket__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 4px;
+}
+
+.code-ticket__stub {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 8px;
+  padding: 14px 18px;
+  border-left: 2px dashed var(--line);
+  font-size: 17px;
+}
+
+.code-ticket__stub .button,
+.code-ticket__stub .copy-status {
+  font-size: 14px;
+}
+
+.code-ticket__stub .copy-status:empty {
+  display: none;
+}
+
+/*
+ * Expired codes stay readable but step back: outlined instead of filled. The
+ * outline has to follow the two notches as well, so a thin ring is drawn just
+ * outside the circle that the mask cuts away at each of them.
+ */
+.code-ticket--expired {
+  --ring:
+    transparent var(--bite), var(--line) calc(var(--bite) + 0.25px),
+    var(--line) calc(var(--bite) + 1px), transparent calc(var(--bite) + 1.25px);
+  background:
+    radial-gradient(circle at calc(100% - var(--stub)) 0, var(--ring)),
+    radial-gradient(circle at calc(100% - var(--stub)) 100%, var(--ring));
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--muted);
+}
+
+/* The status is always written out; the shape of the tag differs as well. */
+.status {
+  align-self: start;
+  padding: 1px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status--upcoming {
+  border-style: dashed;
+}
+
+.dialog {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 20px 22px 22px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 12px 40px rgb(20 33 61 / 35%);
+}
+
+.dialog::backdrop {
+  background: rgb(20 33 61 / 55%);
+}
+
+.dialog h2 {
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
 .library__about {
   display: grid;
   gap: 6px;
   max-width: 62ch;
   padding-top: 20px;
   border-top: 1px solid var(--line);
+}
+
+/* On a narrow window the stub moves below the body and tears off sideways. */
+@media (max-width: 600px) {
+  .code-ticket {
+    grid-template-columns: minmax(0, 1fr);
+    mask: none;
+  }
+
+  .code-ticket__stub {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 2px dashed var(--line);
+    border-left: 0;
+  }
+
+  .code-ticket__stub .copy-status {
+    flex-basis: 100%;
+  }
 }

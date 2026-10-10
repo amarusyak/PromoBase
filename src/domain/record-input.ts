@@ -216,7 +216,7 @@ function correctedDomain(saved: string | undefined, address: string): string | u
  */
 export function fieldsForEdit(
   saved: PromoCodeRecord,
-  typed: RecordInput,
+  typed: Pick<RecordInput, 'resourceUrl' | 'merchantDomain'>,
   checked: RecordFields,
 ): RecordFields {
   const opened = recordToInput(saved);
@@ -233,4 +233,29 @@ export function fieldsForEdit(
     ...(checked.expiryDate === undefined ? {} : { expiryDate: checked.expiryDate }),
     ...(checked.note === undefined ? {} : { note: checked.note }),
   };
+}
+
+/**
+ * The merchant domain a save would store for the address and correction typed
+ * so far, for showing it next to the address before saving (D-017). Undefined
+ * while the two do not give one. Pass the saved record when editing, so that an
+ * untouched merchant shows as it is stored.
+ */
+export function previewMerchantDomain(
+  typed: Pick<RecordInput, 'resourceUrl' | 'merchantDomain'>,
+  saved?: PromoCodeRecord,
+): string | undefined {
+  // Only the two fields count. The caller may hand in the whole form, whose other
+  // fields can be blank or wrong at this point without that hiding the site.
+  const checked = validateRecordInput({
+    promoCode: 'x',
+    resourceUrl: typed.resourceUrl,
+    merchantDomain: typed.merchantDomain,
+    startDate: '',
+    expiryDate: '',
+    note: '',
+  });
+  if (!checked.ok) return undefined;
+  const fields = saved === undefined ? checked.fields : fieldsForEdit(saved, typed, checked.fields);
+  return fields.merchantDomain;
 }

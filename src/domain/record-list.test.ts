@@ -155,6 +155,28 @@ describe('searchRecords', () => {
     expect(searchRecords(all, query)).toEqual(all);
   });
 
+  describe('an international merchant name', () => {
+    const munich = sampleRecord({
+      id: 'idn',
+      promoCode: 'BREZEL5',
+      merchantDomain: 'xn--mnchen-3ya.de',
+    });
+    const records = [...all, munich];
+
+    it.each([
+      ['its readable spelling', 'münchen'],
+      ['its readable spelling in upper case', 'MÜNCHEN.DE'],
+      ['part of its readable spelling', 'ünch'],
+      ['its stored spelling', 'xn--mnchen'],
+    ])('is found by %s', (_label, query) => {
+      expect(codes(searchRecords(records, query))).toEqual(['BREZEL5']);
+    });
+
+    it('is not found by the spelling without the accent', () => {
+      expect(searchRecords(records, 'munchen')).toEqual([]);
+    });
+  });
+
   it('treats the query as plain text, not as a pattern', () => {
     const odd = sampleRecord({ id: 'd', promoCode: 'SAVE(10%)+.*' });
     expect(codes(searchRecords([...all, odd], '(10%)+.*'))).toEqual(['SAVE(10%)+.*']);
