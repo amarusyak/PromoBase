@@ -185,21 +185,6 @@ body {
   color: var(--muted);
 }
 
-/* The status is always written out; the shape of the tag differs as well. */
-.status {
-  align-self: start;
-  padding: 1px 8px;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.status--upcoming {
-  border-style: dashed;
-}
-
 .dialog {
   width: min(460px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);

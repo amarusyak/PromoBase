@@ -3,31 +3,129 @@ body {
   font-size: 13px;
 }
 
+/* Chrome caps a popup at 600px. The tabs and the notice always stay in view: when
+   a panel has more than fits, such as a form with an error on every field, only
+   the panel scrolls. The normal states are kept below the cap without it. */
 .popup {
-  display: grid;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 600px;
   padding: 12px 16px 12px;
 }
 
-.popup__header {
+.popup > * {
+  flex: none;
+}
+
+.popup__top {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
 }
 
-.popup__header h1 {
-  font-size: 15px;
+.popup__tabs {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--wash);
 }
 
-.popup__add {
+.popup__tab {
+  display: inline-flex;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.popup__tab[aria-selected='true'] {
+  background: var(--paper);
+  box-shadow: 0 0 0 1px var(--line);
+  color: var(--ink);
+}
+
+.popup__count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.popup__tab[aria-selected='false'] .popup__count {
+  background: var(--line);
+  color: var(--ink);
+}
+
+.popup > .popup__panel {
   display: grid;
+  flex: 0 1 auto;
+  align-content: start;
+  justify-items: stretch;
   gap: 8px;
+  min-height: 0;
+  /* Room for focus rings, which a scrolling box would otherwise clip. */
+  margin: -3px;
+  padding: 3px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-/* Chrome caps a popup at 600px in height; the form is kept just below that. */
+.popup__panel > .button {
+  justify-self: start;
+}
+
+.popup__heading {
+  font-size: 14px;
+}
+
+/* Long lists scroll inside the tab, so the count and the notice stay in view. */
+.popup__scroll {
+  max-height: 336px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.popup__hint {
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  font-size: 12px;
+}
+
+/* The popup's form is a little denser than the library's, so the normal states
+   (a kept draft, the site line, a warning) fit under the 600px cap. */
 .popup .record-form {
-  gap: 8px;
+  gap: 6px;
+}
+
+.popup .field > .field__input {
+  padding-block: 5px;
+}
+
+.popup .field > .field__input[aria-invalid='true'] {
+  padding-block: 4px;
+}
+
+.popup .record-form__warnings {
+  padding-block: 5px;
+  font-size: 12px;
+}
+
+.popup .record-form__optional {
+  padding-top: 4px;
 }
 
 .ticket {
@@ -73,7 +171,7 @@ body {
 }
 
 .popup__notice {
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--line);
   font-size: 12px;
 }

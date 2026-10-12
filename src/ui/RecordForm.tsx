@@ -35,6 +35,8 @@ interface RecordFormProps {
   secondary?: { label: string; onClick: () => void };
   /** Puts the cursor in the code field when the form appears. */
   focusCode?: boolean;
+  /** A short remark shown next to the buttons, where it costs no height. */
+  actionsNote?: string | undefined;
 }
 
 /** A field whose error also clears when this one is edited, because the two are checked together. */
@@ -54,6 +56,7 @@ export function RecordForm({
   onInput,
   secondary,
   focusCode = false,
+  actionsNote,
 }: RecordFormProps) {
   const id = useId();
   const form = useRef<HTMLFormElement>(null);
@@ -359,6 +362,9 @@ export function RecordForm({
           <button className="button button--quiet" type="button" onClick={secondary.onClick}>
             {secondary.label}
           </button>
+        )}
+        {actionsNote !== undefined && (
+          <p className="record-form__actions-note muted">{actionsNote}</p>
         )}
       </div>
     </form>

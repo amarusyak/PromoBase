@@ -118,3 +118,12 @@ textarea.field__input {
   gap: 8px;
   margin-top: 2px;
 }
+
+/* Takes what is left of the row and wraps there, so it never adds a line below. */
+.record-form__actions-note {
+  flex: 1 1 0;
+  align-self: center;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.3;
+}

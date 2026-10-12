@@ -27,6 +27,11 @@
   }
 }
 
+/* Any rule that sets display would otherwise override the hidden attribute. */
+[hidden] {
+  display: none !important;
+}
+
 *,
 *::before,
 *::after {
@@ -135,6 +140,21 @@ a {
   font-weight: 600;
   overflow-wrap: anywhere;
   user-select: all;
+}
+
+/* The status is always written out; the shape of the tag differs as well. */
+.status {
+  align-self: start;
+  padding: 1px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status--upcoming {
+  border-style: dashed;
 }
 
 /* A copied code is marked the way a highlighter would mark it. */

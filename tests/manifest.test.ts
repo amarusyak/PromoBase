@@ -17,8 +17,17 @@ describe('manifest', () => {
     expect(manifest.minimum_chrome_version).toBe('127');
   });
 
+  // storage: saved codes. activeTab: the address of the tab the popup was opened
+  // over, only after a click on the button (D-008). declarativeContent: the icon
+  // highlight, without site access (D-061). None of the three shows a warning at
+  // install time.
   it('requests only the permissions the current build uses', () => {
-    expect(manifest.permissions).toEqual(['storage']);
+    expect(manifest.permissions).toEqual(['storage', 'activeTab', 'declarativeContent']);
+  });
+
+  it('does not ask for the tabs permission, which would expose every address', () => {
+    expect(manifest.permissions).not.toContain('tabs');
+    expect(manifest.permissions).not.toContain('scripting');
   });
 
   it('declares no site access and injects no scripts', () => {
