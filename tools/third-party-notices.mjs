@@ -25,32 +25,64 @@ const EMBEDDED = {
   },
 };
 
-/** The npm package a bundled module belongs to, or undefined for our own code. */
-export function packageOf(moduleId) {
-  const parts = moduleId.replace(/\\/g, '/').split('/');
+/**
+ * The folder of the npm package a bundled module came from, as resolved by the
+ * bundler, or undefined for our own code. Keeping the folder rather than just
+ * the name means a nested copy, or a second version of a package, is read from
+ * where it really is (review of PR #9).
+ */
+export function packageDir(moduleId) {
+  const path = moduleId.replace(/^\0/, '').replace(/\?.*$/, '').replace(/\\/g, '/');
+  const parts = path.split('/');
   const at = parts.lastIndexOf('node_modules');
-  if (at === -1 || at + 1 >= parts.length) return undefined;
+  if (at === -1) return undefined;
   const first = parts[at + 1];
-  if (first === '') return undefined;
-  if (first.startsWith('@')) return parts[at + 2] ? `${first}/${parts[at + 2]}` : undefined;
-  return first;
+  if (!first) return undefined;
+  const length = first.startsWith('@') ? 3 : 2;
+  if (first.startsWith('@') && !parts[at + 2]) return undefined;
+  return parts.slice(0, at + length).join('/');
 }
 
-/** Name, version, licence and licence text of an installed package. Throws when there is no text. */
-export function readPackage(name, root = process.cwd()) {
-  const folder = join(root, 'node_modules', name);
-  const manifest = JSON.parse(readFileSync(join(folder, 'package.json'), 'utf8'));
-  const file = readdirSync(folder).find((entry) => LICENCE_FILE.test(entry));
-  if (file === undefined) throw new Error(`${name} has no licence file to ship a notice from`);
-  const text = readFileSync(join(folder, file), 'utf8').trim();
-  if (text === '') throw new Error(`${name}'s licence file is empty`);
+/** Every package folder among the bundled modules, once each, sorted. */
+export function bundledPackageDirs(moduleIds) {
+  const dirs = new Set();
+  for (const id of moduleIds) {
+    const dir = packageDir(id);
+    if (dir !== undefined) dirs.add(dir);
+  }
+  return [...dirs].sort();
+}
+
+/** Name, version, licence and licence text of the package in `dir`. Throws when there is no text. */
+export function readPackage(dir) {
+  const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+  const name = manifest.name ?? dir;
+  const file = readdirSync(dir).find((entry) => LICENCE_FILE.test(entry));
+  if (file === undefined)
+    throw new Error(`${name} (${dir}) has no licence file to ship a notice from`);
+  const text = readFileSync(join(dir, file), 'utf8').trim();
+  if (text === '') throw new Error(`${name} (${dir}) has an empty licence file`);
   return { name, version: manifest.version, license: manifest.license ?? 'see text', text };
 }
 
-/** The notices file: every package, sorted by name, then the data embedded in them. */
+/**
+ * The notices file: one section per package version, sorted by name and
+ * version (two copies of the same version count once), then the data
+ * embedded in them.
+ */
 export function noticesText(packages) {
-  const sorted = [...packages].sort((a, b) => a.name.localeCompare(b.name));
-  const embedded = sorted.flatMap((p) => (EMBEDDED[p.name] ? [EMBEDDED[p.name]] : []));
+  const unique = new Map();
+  for (const p of packages) {
+    const key = `${p.name}@${p.version}`;
+    if (!unique.has(key)) unique.set(key, p);
+  }
+  const sorted = [...unique.values()].sort(
+    (a, b) =>
+      a.name.localeCompare(b.name) || a.version.localeCompare(b.version, 'en', { numeric: true }),
+  );
+  const embedded = [...new Set(sorted.map((p) => p.name))].flatMap((name) =>
+    EMBEDDED[name] ? [EMBEDDED[name]] : [],
+  );
   const rule = '-'.repeat(72);
   const sections = [
     ...sorted.map((p) => `${p.name} ${p.version} (${p.license})\n\n${p.text}`),
@@ -68,17 +100,12 @@ export function thirdPartyNotices() {
   return {
     name: 'promobase:third-party-notices',
     generateBundle(_options, bundle) {
-      const names = new Set();
-      for (const output of Object.values(bundle)) {
-        if (output.type !== 'chunk') continue;
-        for (const id of output.moduleIds) {
-          const name = packageOf(id);
-          if (name !== undefined) names.add(name);
-        }
-      }
+      const moduleIds = Object.values(bundle).flatMap((output) =>
+        output.type === 'chunk' ? output.moduleIds : [],
+      );
       let packages;
       try {
-        packages = [...names].map((name) => readPackage(name));
+        packages = bundledPackageDirs(moduleIds).map((dir) => readPackage(dir));
       } catch (error) {
         this.error(
           `third-party notices: ${error instanceof Error ? error.message : String(error)}`,
