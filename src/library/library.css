@@ -94,6 +94,19 @@ body {
   gap: 8px;
 }
 
+.library__pin {
+  padding: 6px 10px;
+  border-left: 3px solid var(--marker);
+  background: var(--paper);
+}
+
+.library__points {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+}
+
 .library__empty.ticket {
   --bite: 11px;
   max-width: 62ch;

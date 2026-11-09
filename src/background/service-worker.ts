@@ -17,6 +17,7 @@ import { applyHighlight } from '../platform/highlight';
 import { chromeLocalStore } from '../platform/key-value-store';
 import { webLock } from '../platform/lock';
 import { chromeSiteAccess } from '../platform/site-access';
+import { openWelcome } from '../platform/welcome';
 import { syncAccess } from './sync-access';
 import { syncHighlight } from './sync-highlight';
 
@@ -53,6 +54,8 @@ function refresh(trigger: string) {
 chrome.runtime.onInstalled.addListener((details) => {
   console.info(`PromoBase ${chrome.runtime.getManifest().version}: ${details.reason}`);
   refresh(details.reason);
+  // First install only, not an update or a reload: the welcome is the empty library (PB-001).
+  if (details.reason === 'install') void openWelcome();
 });
 
 // Rules and access survive a browser restart; refreshing at startup only

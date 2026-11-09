@@ -9,6 +9,9 @@
   --muted: #52607a;
   --marker: #ffdd33;
   --alert: #a4262c;
+  /* Field outlines: at least 3:1 against every background a field sits on
+     (WCAG 1.4.11), where --line is only for decoration. */
+  --field-line: #7d899e;
 
   /* System faces only: nothing is fetched or bundled. Codes use a monospace
      face so that 0/O and 1/l cannot be confused when read off the screen. */
@@ -24,6 +27,7 @@
     --line: #3a4c75;
     --muted: #b3bfd4;
     --alert: #ffb3b0;
+    --field-line: #7387b0;
   }
 }
 
