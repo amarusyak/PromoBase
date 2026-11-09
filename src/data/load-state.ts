@@ -19,3 +19,17 @@ export async function loadStoredState(store: Pick<KeyValueStore, 'get'>): Promis
   }
   return parseStoredState(raw);
 }
+
+/**
+ * The stored value exactly as it is, for a copy of data that cannot be read
+ * (D-124). Never throws; nothing is interpreted or changed.
+ */
+export async function readStoredValue(
+  store: Pick<KeyValueStore, 'get'>,
+): Promise<{ ok: true; value: unknown } | { ok: false }> {
+  try {
+    return { ok: true, value: await store.get(STATE_KEY) };
+  } catch {
+    return { ok: false };
+  }
+}

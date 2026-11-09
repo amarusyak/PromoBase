@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SCHEMA_VERSION, STATE_KEY } from '../domain/stored-state';
 import type { KeyValueStore } from '../platform/key-value-store';
 import { memoryStore } from '../../tests/support/memory-store';
-import { loadStoredState } from './load-state';
+import { loadStoredState, readStoredValue } from './load-state';
 
 function failingStore(error: unknown): Pick<KeyValueStore, 'get'> {
   // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- a non-Error rejection is one of the cases under test
@@ -40,5 +40,19 @@ describe('loadStoredState', () => {
   it('reports unavailable when the rejection is not an Error', async () => {
     const result = await loadStoredState(failingStore('quota'));
     expect(result).toEqual({ status: 'unavailable', reason: 'quota' });
+  });
+});
+
+describe('readStoredValue (D-124)', () => {
+  it('returns the stored value as it is, even when it cannot be read as PromoBase data', async () => {
+    const damaged = { schemaVersion: 1, records: [{ id: 'a' }], extra: 'kept' };
+    const store = memoryStore({ [STATE_KEY]: damaged });
+    expect(await readStoredValue(store)).toEqual({ ok: true, value: damaged });
+    expect(await store.get(STATE_KEY)).toEqual(damaged);
+  });
+
+  it('reports a failed read instead of throwing', async () => {
+    expect(await readStoredValue(failingStore(new Error('gone')))).toEqual({ ok: false });
+    expect(await readStoredValue(failingStore('not an error'))).toEqual({ ok: false });
   });
 });

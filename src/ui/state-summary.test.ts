@@ -79,3 +79,17 @@ describe('summarizeState', () => {
     expect(new Set(messages).size).toBe(3);
   });
 });
+
+describe('what an unreadable state offers (D-124)', () => {
+  it.each<[LoadResult, boolean, boolean]>([
+    [{ status: 'unsupported-version', found: SCHEMA_VERSION + 1 }, true, false],
+    [{ status: 'corrupt', reason: 'x' }, true, true],
+    [{ status: 'unavailable', reason: 'x' }, false, false],
+  ])('$0.status: a copy %s, a report %s', (result, copy, report) => {
+    expect(summarizeState(result)).toMatchObject({
+      kind: 'problem',
+      canSaveCopy: copy,
+      offerReport: report,
+    });
+  });
+});

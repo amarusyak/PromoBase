@@ -111,19 +111,37 @@ export function warningMessage(warning: RecordWarning, fields: RecordFields): st
 /** PB-003: why a new code cannot be added and what to do next. */
 export const LIMIT_REACHED = `You have saved ${RECORD_LIMIT} codes, which is the most PromoBase keeps. Delete one you no longer need to add another.`;
 
-/** Stored data that cannot be read or written over (D-042). */
+/** Stored data that cannot be read or written over (D-042), and what the person can do (D-124). */
 export function unreadableMessage(cause: UnreadableState): string {
   switch (cause.status) {
     case 'unsupported-version':
       return (
-        'Your saved codes were written by a newer version of PromoBase. ' +
-        'Update the extension to see them. Nothing has been changed.'
+        'Your saved codes were written by a newer version of PromoBase, which this version cannot read. ' +
+        'They are kept exactly as they are and come back with that version. Save a copy to keep them safe meanwhile.'
       );
     case 'corrupt':
-      return 'PromoBase could not read your saved codes. Nothing has been changed.';
+      return (
+        'PromoBase could not read your saved codes, so it has left them exactly as they are. ' +
+        'Save a copy to keep them safe, and report the problem on GitHub, leaving your codes out.'
+      );
     case 'unavailable':
       return 'Chrome storage is not responding. Close PromoBase and open it again.';
   }
+}
+
+/** Whether a copy of the stored data can be offered for this problem: only when Chrome could read it. */
+export function canSaveCopy(cause: UnreadableState): boolean {
+  return cause.status !== 'unavailable';
+}
+
+/**
+ * After "Save a copy" (D-124). The file is not named: Chrome may rename it
+ * (a second copy in the same minute gets " (1)") or ask where to save it.
+ */
+export function savedCopyMessage(saved: { ok: boolean }): string {
+  return saved.ok
+    ? 'Chrome is downloading a copy. Your saved codes are unchanged.'
+    : 'PromoBase could not read the stored data to copy it. Close PromoBase and try again.';
 }
 
 /** What to tell the user when a save or a delete did not go through. */

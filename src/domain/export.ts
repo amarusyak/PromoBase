@@ -67,3 +67,17 @@ export function exportFileName(now: Date): string {
   const time = [now.getHours(), now.getMinutes()].map((n) => String(n).padStart(2, '0'));
   return `promobase-codes-${localToday(now)}-${time.join('-')}.json`;
 }
+
+/**
+ * A copy of the saved data exactly as stored, for when PromoBase cannot read
+ * it (D-042, D-124). Nothing is checked, reordered or left out: it is the
+ * person's own data, kept safe while the problem is fixed.
+ */
+export function savedDataText(storedValue: unknown): string {
+  return `${JSON.stringify(storedValue, null, 2)}\n`;
+}
+
+/** promobase-saved-data-YYYY-MM-DD-HH-MM.json, in local time, like the export's name. */
+export function savedDataFileName(now: Date): string {
+  return exportFileName(now).replace('promobase-codes-', 'promobase-saved-data-');
+}

@@ -2,7 +2,14 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createRecord, deleteRecord, importRecords, updateRecord } from '../data/record-store';
 import type { PromoCodeRecord } from '../domain/record';
 import { recordToInput, type RecordInput } from '../domain/record-input';
-import { exportDocument, exportFileName, exportText } from '../domain/export';
+import { readStoredValue } from '../data/load-state';
+import {
+  exportDocument,
+  exportFileName,
+  exportText,
+  savedDataFileName,
+  savedDataText,
+} from '../domain/export';
 import { importTooLarge, parseImport } from '../domain/import';
 import { searchRecords } from '../domain/record-list';
 import { reminderDomains, siteReminderState } from '../domain/site-reminders';
@@ -10,7 +17,14 @@ import { isPinned } from '../platform/action';
 import { downloadFile } from '../platform/download';
 import { chromeSiteAccess } from '../platform/site-access';
 import { Brand } from '../ui/Brand';
-import { BUTTON_TIPS, NOT_CHECKED, RETENTION_NOTICE, STORAGE_MODE, WELCOME } from '../ui/copy';
+import {
+  BUTTON_TIPS,
+  NOT_CHECKED,
+  retentionNotice,
+  SAVE_COPY,
+  STORAGE_MODE,
+  WELCOME,
+} from '../ui/copy';
 import { CopyCode } from '../ui/CopyButton';
 import { EMPTY_INPUT } from '../ui/draft';
 import { importReport, type ImportReport } from '../ui/import-report';
@@ -19,6 +33,7 @@ import {
   changeFailureMessage,
   importFailureMessage,
   importProblemMessage,
+  savedCopyMessage,
   LIMIT_REACHED,
 } from '../ui/messages';
 import { RecordForm, type SubmitOutcome } from '../ui/RecordForm';
@@ -62,10 +77,13 @@ export function Library() {
   const summary = summarizeState(result);
   if (summary.kind === 'problem') {
     return (
-      <Page>
-        <p className="problem" role="alert">
-          {summary.message}
-        </p>
+      <Page readable={false}>
+        <UnreadableData
+          key={summary.message}
+          message={summary.message}
+          canSaveCopy={summary.canSaveCopy}
+          offerReport={summary.offerReport}
+        />
       </Page>
     );
   }
@@ -392,7 +410,56 @@ function WaitingSites({ sites }: { sites: string[] }) {
 }
 
 /** The frame every state of the library shares. */
-function Page({ children }: { children: ReactNode }) {
+/**
+ * Saved codes this build cannot read (D-042): the message, and a way to keep
+ * them safe (D-124). The copy is the stored value as it is; nothing is changed.
+ */
+function UnreadableData({
+  message,
+  canSaveCopy,
+  offerReport,
+}: {
+  message: string;
+  canSaveCopy: boolean;
+  offerReport: boolean;
+}) {
+  const [saved, setSaved] = useState<string>();
+  const saveCopy = async () => {
+    const read = await readStoredValue(store.store);
+    if (!read.ok) {
+      setSaved(savedCopyMessage(read));
+      return;
+    }
+    downloadFile(savedDataFileName(new Date()), savedDataText(read.value));
+    setSaved(savedCopyMessage({ ok: true }));
+  };
+  return (
+    <section className="problem library__unreadable" role="alert">
+      <p>{message}</p>
+      {(canSaveCopy || offerReport) && (
+        <p className="library__unreadable-actions">
+          {canSaveCopy && (
+            <button className="button" type="button" onClick={() => void saveCopy()}>
+              {SAVE_COPY.button}
+            </button>
+          )}
+          {offerReport && (
+            <a href={SAVE_COPY.issuesUrl} target="_blank" rel="noreferrer">
+              {SAVE_COPY.issuesLink}
+            </a>
+          )}
+        </p>
+      )}
+      {saved !== undefined && (
+        <p className="muted" role="status">
+          {saved}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function Page({ children, readable = true }: { children: ReactNode; readable?: boolean }) {
   return (
     <main className="library">
       <header className="library__header">
@@ -403,7 +470,7 @@ function Page({ children }: { children: ReactNode }) {
       {children}
       <section className="library__about" aria-labelledby="about-title">
         <h2 id="about-title">About your saved codes</h2>
-        <p className="muted">{RETENTION_NOTICE}</p>
+        <p className="muted">{retentionNotice(readable)}</p>
         <p className="muted">{NOT_CHECKED}</p>
       </section>
     </main>

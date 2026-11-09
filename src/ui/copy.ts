@@ -1,8 +1,18 @@
-/** PB-002: where guest records live, what can remove them, and how to keep a copy (D-027). */
-export const RETENTION_NOTICE =
+/** PB-002: where guest records live and what can remove them. */
+const RETENTION_RISK =
   'Your promo codes are saved in this Chrome profile. Clearing browsing history will not remove them. ' +
-  'If you remove PromoBase or reset or lose this Chrome profile, your saved codes may be lost. ' +
-  'Keep a copy with Export in the library.';
+  'If you remove PromoBase or reset or lose this Chrome profile, your saved codes may be lost.';
+
+/** PB-002, D-107: the same, with how to keep a copy (D-027). */
+export const RETENTION_NOTICE = `${RETENTION_RISK} Keep a copy with Export in the library.`;
+
+/**
+ * While the saved codes cannot be read, Export is not available, so the notice
+ * leaves it out; the problem itself offers a copy (D-124).
+ */
+export function retentionNotice(readable: boolean): string {
+  return readable ? RETENTION_NOTICE : RETENTION_RISK;
+}
 
 /** PB-001: identifies the storage mode as guest and local. */
 export const STORAGE_MODE = 'Guest mode. Codes stay in this Chrome profile.';
@@ -36,4 +46,12 @@ export const WELCOME = {
   importHint: 'Have an export from PromoBase? Use Import to bring your codes back.',
   pinHint:
     "Pin PromoBase to the toolbar to see its icon change: open Chrome's puzzle-piece Extensions menu and choose the pin next to PromoBase.",
+} as const;
+
+/** D-124: offered when the saved codes cannot be read. */
+export const SAVE_COPY = {
+  button: 'Save a copy of your saved codes',
+  popupLink: 'Open the library to save a copy',
+  issuesUrl: 'https://github.com/amarusyak/PromoBase/issues',
+  issuesLink: 'Report the problem on GitHub',
 } as const;

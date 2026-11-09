@@ -1,6 +1,6 @@
 import type { LoadResult } from '../data/load-state';
 import { RECORD_LIMIT, type PromoCodeRecord } from '../domain/record';
-import { unreadableMessage } from './messages';
+import { canSaveCopy, unreadableMessage } from './messages';
 
 export type StateSummary =
   | {
@@ -12,7 +12,11 @@ export type StateSummary =
       /** PB-003: no further record can be added. */
       atLimit: boolean;
     }
-  | { kind: 'problem'; message: string };
+  /**
+   * canSaveCopy: the stored value can be saved to a file as it is (D-124).
+   * offerReport: the data is damaged, which only a fix to PromoBase can answer.
+   */
+  | { kind: 'problem'; message: string; canSaveCopy: boolean; offerReport: boolean };
 
 /** Turns the outcome of loading stored data into what the interface shows. */
 export function summarizeState(result: LoadResult): StateSummary {
@@ -22,7 +26,12 @@ export function summarizeState(result: LoadResult): StateSummary {
     case 'ok':
       return ready(result.state.records);
     default:
-      return { kind: 'problem', message: unreadableMessage(result) };
+      return {
+        kind: 'problem',
+        message: unreadableMessage(result),
+        canSaveCopy: canSaveCopy(result),
+        offerReport: result.status === 'corrupt',
+      };
   }
 }
 
