@@ -25,6 +25,14 @@ None of this is sent anywhere. Not to the developer, not to anyone else.
 
 PromoBase never sees other sites you visit, your browsing history, passwords, forms, carts or payment details.
 
+## Incognito
+
+Chrome keeps PromoBase off in Incognito windows unless you allow it in PromoBase's settings in `chrome://extensions`. If you do, the same PromoBase works in Incognito and normal windows, with one set of saved codes:
+
+- A code you save in an Incognito window is kept in your profile like any other, and stays after the window closes. Delete it in the library if you do not want to keep it.
+- What PromoBase notes about an Incognito tab (which shop it is on) is forgotten when the tab closes; when a reminder was last shown for a shop is kept until Chrome closes.
+- Site access you give a shop applies in Incognito windows too.
+
 ## Files
 
 **Export** saves your codes to a file on your computer, and **Import** reads a file you choose. Both happen only when you click them, and the file goes nowhere else.

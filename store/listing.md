@@ -63,7 +63,17 @@ Text to paste into the Chrome Web Store developer dashboard for PromoBase 0.1.0.
 
 **Data usage:**
 
-Leave every data type unchecked. PromoBase keeps what the person enters, and the addresses it reads, in the browser only; nothing is sent to the developer or anyone else. Chrome's extensions DevRel has said storing user data locally only does not require a disclosure, while data that leaves the device does ([chromium-extensions thread](https://groups.google.com/a/chromium.org/g/chromium-extensions/c/E6YoDbui4_Y), January 2021). If a review asks otherwise, the closest types are "Website content" (the codes and notes) and "Web history" (the tab address read on a click or on a shop with reminders on).
+Disclose what PromoBase handles, even though all of it stays in the browser: Chrome requires extensions to disclose how they handle user data "even when data is processed or stored locally" ([User Data FAQ](https://developer.chrome.com/docs/webstore/program-policies/user-data-faq)). Nothing is sent to the developer or anyone else, which the privacy policy says.
+
+What PromoBase handles, and the Dashboard category it most likely falls under. Check each against the categories the form shows when submitting, and tick every one that fits:
+
+| Data                                           | Where it comes from                                                                   | Kept                                            | Likely category                                                   |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------- |
+| Shop addresses and site names saved with codes | Typed by the person                                                                   | In the profile until deleted                    | Web history                                                       |
+| Address of the current tab                     | Read on a click on the PromoBase button (`activeTab`), and on shops with reminders on | Only the shop's site name, while Chrome is open | Web history                                                       |
+| Promo codes, notes and dates                   | Typed by the person, or imported from their own export                                | In the profile until deleted                    | Website content (or user-generated content, if the form lists it) |
+
+PromoBase handles no personally identifiable, health, financial, authentication, personal communication or location data, and no user activity such as clicks, keystrokes or mouse movement.
 
 Certify all three:
 
