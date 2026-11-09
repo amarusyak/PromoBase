@@ -22,6 +22,8 @@ Google Chrome desktop, version 127 or later (Manifest V3).
 - Site access is optional and requested per merchant, only for merchants you enable reminders for.
 - Local-only storage means records are lost if the extension is removed or the browser profile is deleted. Export from the library keeps a copy on your computer, and Import brings it back.
 
+The full [privacy policy](PRIVACY.md) says what PromoBase keeps and looks at. The Chrome Web Store listing text and images are in [`store/`](store/listing.md).
+
 ## Development
 
 Requirements: Node.js 22.12 or later, npm, and Google Chrome 127 or later.
@@ -46,6 +48,15 @@ Checks:
 npm run check    # lint, type check, format check, unit tests, build
 npm test         # unit tests only
 ```
+
+The icons and the store tile are drawn by a script, so they carry no metadata (Python 3.8 or later):
+
+```sh
+python3 -m pip install -r tools/requirements.txt
+python3 tools/draw-icons.py
+```
+
+How to contribute, including the rules for changing stored data: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Stack: TypeScript, Manifest V3, React with Vite.
 
