@@ -3,6 +3,7 @@ import { createRecord, deleteRecord, updateRecord } from '../data/record-store';
 import type { PromoCodeRecord } from '../domain/record';
 import { recordToInput, type RecordInput } from '../domain/record-input';
 import { searchRecords } from '../domain/record-list';
+import { siteReminderState } from '../domain/site-reminders';
 import { Brand } from '../ui/Brand';
 import { RETENTION_NOTICE, STORAGE_MODE } from '../ui/copy';
 import { CopyCode } from '../ui/CopyButton';
@@ -12,7 +13,9 @@ import { RecordForm, type SubmitOutcome } from '../ui/RecordForm';
 import { groupRecords, type RecordView } from '../ui/record-view';
 import { summarizeState } from '../ui/state-summary';
 import { store } from '../ui/store';
+import { SiteReminder } from '../ui/SiteReminder';
 import { useNotice } from '../ui/use-notice';
+import { useSiteAccess } from '../ui/use-site-access';
 import { useStoredState } from '../ui/use-stored-state';
 import { useToday } from '../ui/use-today';
 
@@ -30,6 +33,8 @@ export function Library() {
   const [deleting, setDeleting] = useState(false);
   const deleteUnderWay = useRef(false);
   const list = useRef<HTMLDivElement>(null);
+  const loaded = result?.status === 'ok' ? result.state.records : [];
+  const access = useSiteAccess(loaded.flatMap((record) => record.merchantDomain ?? []));
 
   if (result === undefined) return null;
 
@@ -48,6 +53,19 @@ export function Library() {
   const matches = searchRecords(records, query);
   const groups = groupRecords(matches, today);
   const searching = query.trim() !== '';
+
+  /** The reminder switch of a row's site (D-100), once Chrome has said what access there is. */
+  function reminderFor(id: string): ReactNode {
+    const domain = records.find((record) => record.id === id)?.merchantDomain;
+    if (domain === undefined || access === undefined) return null;
+    return (
+      <SiteReminder
+        domain={domain}
+        state={siteReminderState(records, domain, access.get(domain) ?? false)}
+        compact
+      />
+    );
+  }
 
   async function save(input: RecordInput): Promise<SubmitOutcome> {
     const outcome =
@@ -162,6 +180,7 @@ export function Library() {
                   <CodeTicket
                     key={row.id}
                     row={row}
+                    reminder={reminderFor(row.id)}
                     confirming={confirming === row.id}
                     deleting={deleting}
                     onEdit={() => {
@@ -220,6 +239,8 @@ function Page({ children }: { children: ReactNode }) {
 
 interface CodeTicketProps {
   row: RecordView;
+  /** The reminder switch of the code's site, if it has one. */
+  reminder: ReactNode;
   /** True while this row asks whether it should really be deleted (PB-011). */
   confirming: boolean;
   /** True while a delete is under way; the answer cannot be given twice. */
@@ -233,6 +254,7 @@ interface CodeTicketProps {
 /** One saved code, drawn as a ticket: details on the left, the code on its stub. */
 function CodeTicket({
   row,
+  reminder,
   confirming,
   deleting,
   onEdit,
@@ -270,6 +292,7 @@ function CodeTicket({
         )}
         {row.note !== undefined && <p className="code-ticket__note">{row.note}</p>}
         {row.dates !== undefined && <p className="code-ticket__dates muted">{row.dates}</p>}
+        {reminder}
         {confirming ? (
           <div className="code-ticket__actions" role="group" aria-label={`Delete ${row.code}?`}>
             <span>Delete this code?</span>

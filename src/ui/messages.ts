@@ -148,3 +148,24 @@ export function changeFailureMessage(failure: ChangeFailure, action: 'save' | 'd
         : 'Chrome could not delete the code. Nothing was changed. Try again.';
   }
 }
+
+/** What to tell the user when turning a site's reminders on or off did not go through (D-100). */
+export function switchFailureMessage(
+  failure: Exclude<ChangeFailure, { problem: 'limit-reached' }>,
+): string {
+  switch (failure.problem) {
+    case 'not-found':
+      return 'The codes for this site were deleted in another window, so there is nothing to remind you of.';
+    case 'unreadable':
+      return unreadableMessage(failure.cause);
+    case 'write-failed':
+      return 'Chrome could not save the change. Nothing was changed. Try again.';
+  }
+}
+
+/**
+ * Chrome refused to show its question, typically because it came too long
+ * after the click (D-058). The switch is already on, so asking again is safe.
+ */
+export const ACCESS_REQUEST_FAILED =
+  'Chrome did not show its question. Press Allow access to try again.';

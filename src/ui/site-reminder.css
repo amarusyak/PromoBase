@@ -1,0 +1,55 @@
+/* A site's reminder switch, in the popup and in the library. */
+.site-reminder {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+
+.site-reminder__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.site-reminder__status {
+  flex-basis: 100%;
+}
+
+.site-reminder--compact .site-reminder__status {
+  flex-basis: auto;
+}
+
+.site-reminder--compact .site-reminder__status::after {
+  content: ' ·';
+}
+
+.site-reminder--needs-access .site-reminder__status {
+  font-weight: 600;
+}
+
+.site-reminder--compact .button {
+  padding: 3px 10px;
+}
+
+/* PromoBase's own explanation, before Chrome's dialog (D-061). */
+.site-reminder__explain {
+  gap: 8px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--marker);
+  background: var(--wash);
+}
+
+.site-reminder__explain:focus,
+.site-reminder__status:focus {
+  outline: none;
+}
+
+.site-reminder__explain:focus-visible,
+.site-reminder__status:focus-visible {
+  outline: 2px solid var(--ink);
+}
+
+.site-reminder__explain h3 {
+  font-size: 1em;
+}

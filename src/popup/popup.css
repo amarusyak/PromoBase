@@ -75,6 +75,9 @@ body {
   flex: 0 1 auto;
   align-content: start;
   justify-items: stretch;
+  /* Rows keep their height, so a list that scrolls by itself is never squeezed
+     when the panel runs out of room; the panel scrolls instead. */
+  grid-auto-rows: max-content;
   gap: 8px;
   min-height: 0;
   /* Room for focus rings, which a scrolling box would otherwise clip. */
@@ -174,4 +177,18 @@ body {
   padding-top: 8px;
   border-top: 1px solid var(--line);
   font-size: 12px;
+}
+
+/* While a site's reminder explanation is open it is all the panel shows, so it
+   fits with its buttons in view: the codes, the saved ticket's details and the
+   other buttons come back with "Not now" or once reminders are on. */
+.popup__panel:has(> .site-reminder__explain) > :not(.site-reminder__explain),
+.popup__saved:has(> .site-reminder__explain) > :not(.site-reminder__explain) {
+  display: none;
+}
+
+.popup__saved:has(> .site-reminder__explain) {
+  padding: 0;
+  background: none;
+  mask: none;
 }
