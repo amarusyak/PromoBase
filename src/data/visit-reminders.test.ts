@@ -206,6 +206,29 @@ describe('onPopupOpened', () => {
     expect(await onPopupOpened(t.deps, 5)).toBe(false);
   });
 
+  it('is a click when the reminder could not open the popup (review of PR #7)', async () => {
+    const t = setup();
+    t.failOpen();
+    await onPageLoaded(t.deps, t.tab(5, 'https://shop.example/'));
+    expect(await t.session.get(REMINDER_OPENED_KEY)).toBeUndefined();
+    expect(await onPopupOpened(t.deps, 5)).toBe(false);
+  });
+
+  it('leaves the mark of another tab for that tab (review of PR #7)', async () => {
+    const t = setup();
+    await onPageLoaded(t.deps, t.tab(5, 'https://shop.example/'));
+    expect(await onPopupOpened(t.deps, 6)).toBe(false);
+    expect(await onPopupOpened(t.deps, 5)).toBe(true);
+  });
+
+  it("drops another tab's mark once it is too old to count", async () => {
+    const t = setup();
+    await onPageLoaded(t.deps, t.tab(5, 'https://shop.example/'));
+    t.advance(OPENED_WINDOW_MS);
+    expect(await onPopupOpened(t.deps, 6)).toBe(false);
+    expect(await t.session.get(REMINDER_OPENED_KEY)).toBeUndefined();
+  });
+
   it('answers a waiting reminder, so closing the popup does not bring it back', async () => {
     const t = setup();
     await onPageLoaded(t.deps, t.tab(5, 'https://shop.example/', false));

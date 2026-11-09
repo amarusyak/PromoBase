@@ -101,8 +101,10 @@ async function apply(deps: ReminderDeps, { step: { effect }, tabId, windowId, co
         await deps.tabs.openPopup(windowId);
       } catch (error) {
         // The record stays reachable from the toolbar button; the visit counts as
-        // reminded, so the popup is not tried again during it (PB-014).
+        // reminded, so the popup is not tried again during it (PB-014). The mark
+        // goes, or a click within OPENED_WINDOW_MS would pass for a reminder.
         console.warn('PromoBase: reminder popup could not open', error);
+        await deps.session.remove(REMINDER_OPENED_KEY);
         await deps.tabs.setBadge(tabId, String(codes));
       }
   }
@@ -192,8 +194,10 @@ export async function onPopupOpened(deps: ReminderDeps, tabId: number): Promise<
       { tabId?: unknown; at?: unknown } | undefined;
     if (opened !== undefined) {
       const age = deps.now().getTime() - Number(opened.at);
-      automatic = opened.tabId === tabId && age >= 0 && age < OPENED_WINDOW_MS;
-      await deps.session.remove(REMINDER_OPENED_KEY);
+      const fresh = age >= 0 && age < OPENED_WINDOW_MS;
+      automatic = opened.tabId === tabId && fresh;
+      // A popup on another tab leaves the mark for the tab it belongs to.
+      if (opened.tabId === tabId || !fresh) await deps.session.remove(REMINDER_OPENED_KEY);
     }
     return { step: popupOpened(state, tabId), tabId, windowId: -1, codes: 0 };
   });
