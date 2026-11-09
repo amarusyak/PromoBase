@@ -26,6 +26,8 @@ promobase-export*.json
 
 # Editors and OS
 .idea/
+.venv/
+__pycache__/
 .vscode/*
 !.vscode/extensions.json
 .DS_Store

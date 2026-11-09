@@ -1,3 +1,7 @@
 dist/
 coverage/
 package-lock.json
+build/
+.venv/
+# Frozen layouts: pinned by hash in tests/stored-data-compatibility.test.ts
+tests/fixtures/

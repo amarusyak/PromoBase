@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { thirdPartyNotices } from './tools/third-party-notices.mjs';
 
 // Modules the service worker must never load, directly or through a shared chunk:
 // React (UI only) and the Public Suffix List (about 300 kB).
@@ -35,7 +36,7 @@ function serviceWorkerStaysSmall(): Plugin {
 // The extension has three entry points: two HTML pages and the background
 // service worker. The manifest and icons are static files in public/.
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), serviceWorkerStaysSmall()],
+  plugins: [react(), serviceWorkerStaysSmall(), thirdPartyNotices()],
   build: {
     // Minimum supported Chrome, kept in step with minimum_chrome_version in the manifest.
     target: 'chrome127',

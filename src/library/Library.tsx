@@ -6,10 +6,11 @@ import { exportDocument, exportFileName, exportText } from '../domain/export';
 import { importTooLarge, parseImport } from '../domain/import';
 import { searchRecords } from '../domain/record-list';
 import { reminderDomains, siteReminderState } from '../domain/site-reminders';
+import { isPinned } from '../platform/action';
 import { downloadFile } from '../platform/download';
 import { chromeSiteAccess } from '../platform/site-access';
 import { Brand } from '../ui/Brand';
-import { BUTTON_TIPS, RETENTION_NOTICE, STORAGE_MODE } from '../ui/copy';
+import { BUTTON_TIPS, NOT_CHECKED, RETENTION_NOTICE, STORAGE_MODE, WELCOME } from '../ui/copy';
 import { CopyCode } from '../ui/CopyButton';
 import { EMPTY_INPUT } from '../ui/draft';
 import { importReport, type ImportReport } from '../ui/import-report';
@@ -47,6 +48,10 @@ export function Library() {
   const deleteUnderWay = useRef(false);
   const list = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const [pinned, setPinned] = useState<boolean>();
+  useEffect(() => {
+    void isPinned().then(setPinned);
+  }, []);
   const [report, setReport] = useState<ImportReport>();
   const [importing, setImporting] = useState(false);
   const loaded = result?.status === 'ok' ? result.state.records : [];
@@ -281,12 +286,21 @@ export function Library() {
 
       <div className="library__list" ref={list} tabIndex={-1}>
         {records.length === 0 ? (
+          // The welcome on first launch, and whenever the library is empty (PB-001).
           <section className="ticket library__empty" aria-labelledby="empty-title">
-            <h2 id="empty-title">No codes saved yet</h2>
-            <p>
-              Save a promo code with the store it belongs to. Use Add a code here, or the PromoBase
-              button in the Chrome toolbar while you browse.
-            </p>
+            <h2 id="empty-title">{WELCOME.title}</h2>
+            <p>{WELCOME.intro}</p>
+            <ul className="library__points">
+              {WELCOME.points.map((point) => (
+                <li key={point}>{point}</li>
+              ))}
+            </ul>
+            <button className="button" type="button" onClick={() => setEditing({ kind: 'add' })}>
+              Add your first code
+            </button>
+            {pinned === false && <p className="library__pin">{WELCOME.pinHint}</p>}
+            <p className="muted">{WELCOME.importHint}</p>
+            <p className="muted">{NOT_CHECKED}</p>
           </section>
         ) : groups.length === 0 ? (
           <section className="library__empty" aria-labelledby="none-title">
@@ -390,6 +404,7 @@ function Page({ children }: { children: ReactNode }) {
       <section className="library__about" aria-labelledby="about-title">
         <h2 id="about-title">About your saved codes</h2>
         <p className="muted">{RETENTION_NOTICE}</p>
+        <p className="muted">{NOT_CHECKED}</p>
       </section>
     </main>
   );

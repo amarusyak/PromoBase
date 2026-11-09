@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { sampleRecord } from '../../tests/support/sample-record';
 import { SCHEMA_VERSION, STATE_KEY } from '../domain/stored-state';
 import type { Lock } from '../platform/lock';
-import { memoryStore } from '../platform/memory-store';
-import { serialLock } from '../platform/serial-lock';
+import { memoryStore } from '../../tests/support/memory-store';
+import { serialLock } from '../../tests/support/serial-lock';
 import { syncHighlight, type HighlightDeps } from './sync-highlight';
 
 function setup(initial?: unknown, overrides: Partial<HighlightDeps> = {}) {

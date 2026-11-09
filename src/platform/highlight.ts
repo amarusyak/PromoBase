@@ -8,7 +8,10 @@ const RULE_ID = 'promobase-highlight';
 const YELLOW = '#ffdd33';
 const NAVY = '#14213d';
 
-/** The normal icon with its colours swapped: a yellow tile with a navy ticket. */
+/**
+ * The normal icon with its colours swapped: a yellow tile with a navy ticket,
+ * in the same proportions as tools/draw-icons.py.
+ */
 function highlightedIcon(size: number): ImageData {
   const context = new OffscreenCanvas(size, size).getContext('2d');
   if (context === null) throw new Error('2d canvas context unavailable');
@@ -16,19 +19,19 @@ function highlightedIcon(size: number): ImageData {
   context.beginPath();
   context.roundRect(0, 0, size, size, size * 0.22);
   context.fill();
-  const width = size * 0.7;
-  const height = size * 0.42;
+  const width = size * 0.72;
+  const height = size * 0.44;
   const left = (size - width) / 2;
   const top = (size - height) / 2;
   context.fillStyle = NAVY;
   context.beginPath();
-  context.roundRect(left, top, width, height, size * 0.06);
+  context.roundRect(left, top, width, height, height * 0.14);
   context.fill();
   // The ticket's two bites, in the tile's colour.
   context.fillStyle = YELLOW;
   for (const x of [left, left + width]) {
     context.beginPath();
-    context.arc(x, size / 2, height * 0.24, 0, Math.PI * 2);
+    context.arc(x, size / 2, height * 0.25, 0, Math.PI * 2);
     context.fill();
   }
   return context.getImageData(0, 0, size, size);

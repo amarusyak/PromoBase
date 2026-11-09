@@ -4,8 +4,8 @@ import { SCHEMA_VERSION, STATE_KEY } from '../domain/stored-state';
 import { COOLDOWN_MS, EMPTY_REMINDER_STATE } from '../domain/visit-reminder';
 import type { BrowserTabs, TabInfo } from '../platform/browser-tabs';
 import type { Lock } from '../platform/lock';
-import { memoryStore } from '../platform/memory-store';
-import { serialLock } from '../platform/serial-lock';
+import { memoryStore } from '../../tests/support/memory-store';
+import { serialLock } from '../../tests/support/serial-lock';
 import {
   onBrowserStarted,
   onPageLoaded,

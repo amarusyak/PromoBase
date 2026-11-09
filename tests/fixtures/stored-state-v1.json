@@ -1,0 +1,34 @@
+{
+  "records": [
+    {
+      "createdAt": "2026-11-01T10:00:00.000Z",
+      "expiryDate": "2026-11-30",
+      "id": "6a0d3c1e-1111-4000-8000-000000000001",
+      "merchantDomain": "larkspur.example",
+      "note": "15% off kit, from a cycling channel",
+      "notify": true,
+      "promoCode": "AUTUMN15",
+      "resourceUrl": "https://www.larkspur.example/bikes",
+      "startDate": "2026-11-01",
+      "updatedAt": "2026-11-02T08:30:00.000Z"
+    },
+    {
+      "createdAt": "2026-11-03T12:00:00.000Z",
+      "id": "6a0d3c1e-1111-4000-8000-000000000002",
+      "merchantDomain": "xn--mnchen-3ya.example",
+      "notify": false,
+      "promoCode": "Grüße5",
+      "resourceUrl": "münchen.example",
+      "updatedAt": "2026-11-03T12:00:00.000Z"
+    },
+    {
+      "createdAt": "2026-11-04T09:15:00.000Z",
+      "id": "6a0d3c1e-1111-4000-8000-000000000003",
+      "note": "Show at the till in the town shop",
+      "notify": false,
+      "promoCode": "BIRTHDAY5",
+      "updatedAt": "2026-11-04T09:15:00.000Z"
+    }
+  ],
+  "schemaVersion": 1
+}

@@ -5,8 +5,8 @@ import { recordToInput, type RecordInput } from '../domain/record-input';
 import { SCHEMA_VERSION, STATE_KEY } from '../domain/stored-state';
 import type { KeyValueStore } from '../platform/key-value-store';
 import type { Lock } from '../platform/lock';
-import { memoryStore } from '../platform/memory-store';
-import { serialLock } from '../platform/serial-lock';
+import { memoryStore } from '../../tests/support/memory-store';
+import { serialLock } from '../../tests/support/serial-lock';
 import { loadStoredState } from './load-state';
 import {
   createRecord,
