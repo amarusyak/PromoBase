@@ -10,12 +10,12 @@ import { parseStoredState, SCHEMA_VERSION } from './stored-state';
 
 /**
  * The largest file an import reads (review of PR #8). A real export is far
- * smaller: 100 codes, each with at most a 2,000-character address, a
- * 140-character note and a 100-character code, come to roughly 300 kB. The
- * size is known without reading the file, so anything larger is refused
- * before it is loaded into memory.
+ * smaller: 100 codes with every field at its write limit, written in
+ * characters that take 3 bytes each, come to about 700 kB. The size is known
+ * without reading the file, so anything larger is refused before it is
+ * loaded into memory. 2 MB keeps more than twice that worst case.
  */
-export const IMPORT_MAX_BYTES = 1024 * 1024;
+export const IMPORT_MAX_BYTES = 2 * 1024 * 1024;
 
 /** Whether a file of this many bytes is refused unread. */
 export function importTooLarge(bytes: number): boolean {

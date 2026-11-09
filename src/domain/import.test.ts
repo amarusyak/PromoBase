@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { sampleRecord } from '../../tests/support/sample-record';
 import { exportDocument, exportText } from './export';
 import { IMPORT_MAX_BYTES, importTooLarge, parseImport, planImport } from './import';
-import { RECORD_LIMIT, type PromoCodeRecord } from './record';
+import {
+  NOTE_MAX_LENGTH,
+  PROMO_CODE_MAX_LENGTH,
+  RECORD_LIMIT,
+  RESOURCE_URL_MAX_LENGTH,
+  type PromoCodeRecord,
+} from './record';
 import { SCHEMA_VERSION } from './stored-state';
 
 const NOW = new Date(Date.UTC(2026, 10, 9, 16, 36));
@@ -83,25 +89,30 @@ describe('parseImport', () => {
 });
 
 describe('importTooLarge (review of PR #8)', () => {
-  it('lets through a file up to 1 MB and refuses anything larger', () => {
-    expect(IMPORT_MAX_BYTES).toBe(1024 * 1024);
+  it('lets through a file up to 2 MB and refuses anything larger', () => {
+    expect(IMPORT_MAX_BYTES).toBe(2 * 1024 * 1024);
     expect(importTooLarge(IMPORT_MAX_BYTES)).toBe(false);
     expect(importTooLarge(IMPORT_MAX_BYTES + 1)).toBe(true);
   });
 
-  it('leaves room for the largest export 100 codes can make', () => {
-    const longest = Array.from({ length: RECORD_LIMIT }, (_, i) =>
-      code(`id-${String(i).padStart(32, '0')}`, {
-        promoCode: 'C'.repeat(100),
+  it('leaves room for the largest export 100 codes can make (review of PR #8)', () => {
+    // Every field at its write limit, in a character that takes 3 bytes in UTF-8
+    // but counts once towards the limit: the most bytes a field can hold.
+    const wide = '漢';
+    const url = 'https://shop.example/';
+    const largest = Array.from({ length: RECORD_LIMIT }, (_, i) =>
+      code(crypto.randomUUID(), {
+        promoCode: wide.repeat(PROMO_CODE_MAX_LENGTH),
         merchantDomain: 'shop.example',
-        resourceUrl: `https://shop.example/${'ü'.repeat(1980)}`,
-        note: '☕'.repeat(70),
+        resourceUrl: url + wide.repeat(RESOURCE_URL_MAX_LENGTH - url.length),
+        note: wide.repeat(NOTE_MAX_LENGTH),
         startDate: '2026-01-01',
         expiryDate: '2027-01-01',
+        createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
       }),
     );
-    const bytes = new TextEncoder().encode(exportText(exportDocument(longest, NOW))).length;
-    expect(importTooLarge(bytes)).toBe(false);
+    expect(largest[0]?.resourceUrl).toHaveLength(RESOURCE_URL_MAX_LENGTH);
+    const bytes = new TextEncoder().encode(exportText(exportDocument(largest, NOW))).length;
     expect(bytes).toBeLessThan(IMPORT_MAX_BYTES / 2);
   });
 });
