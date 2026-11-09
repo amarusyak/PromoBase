@@ -1,4 +1,4 @@
-import type { StoreArea } from './key-value-store';
+import type { StoreArea } from '../../src/platform/key-value-store';
 
 /**
  * In-memory stand-in for chrome.storage, for tests.

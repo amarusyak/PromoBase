@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SCHEMA_VERSION, STATE_KEY } from '../domain/stored-state';
 import type { KeyValueStore } from '../platform/key-value-store';
-import { memoryStore } from '../platform/memory-store';
+import { memoryStore } from '../../tests/support/memory-store';
 import { loadStoredState } from './load-state';
 
 function failingStore(error: unknown): Pick<KeyValueStore, 'get'> {

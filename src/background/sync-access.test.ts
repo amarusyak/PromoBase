@@ -3,8 +3,8 @@ import { sampleRecord } from '../../tests/support/sample-record';
 import { accessPattern } from '../domain/site-reminders';
 import { SCHEMA_VERSION, STATE_KEY } from '../domain/stored-state';
 import type { Lock } from '../platform/lock';
-import { memoryStore } from '../platform/memory-store';
-import { serialLock } from '../platform/serial-lock';
+import { memoryStore } from '../../tests/support/memory-store';
+import { serialLock } from '../../tests/support/serial-lock';
 import { syncAccess, type AccessDeps } from './sync-access';
 
 function setup(initial: unknown, granted: string[], overrides: Partial<AccessDeps> = {}) {

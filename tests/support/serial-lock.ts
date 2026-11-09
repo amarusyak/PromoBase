@@ -1,4 +1,4 @@
-import type { Lock } from './lock';
+import type { Lock } from '../../src/platform/lock';
 
 /** In-memory stand-in for webLock, for tests: one piece of work at a time, in order. */
 export function serialLock(): Lock {
