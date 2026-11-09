@@ -3,7 +3,7 @@ import { createRecord, deleteRecord, importRecords, updateRecord } from '../data
 import type { PromoCodeRecord } from '../domain/record';
 import { recordToInput, type RecordInput } from '../domain/record-input';
 import { exportDocument, exportFileName, exportText } from '../domain/export';
-import { parseImport } from '../domain/import';
+import { importTooLarge, parseImport } from '../domain/import';
 import { searchRecords } from '../domain/record-list';
 import { reminderDomains, siteReminderState } from '../domain/site-reminders';
 import { downloadFile } from '../platform/download';
@@ -81,6 +81,11 @@ export function Library() {
     setReport(undefined);
     setFailure(undefined);
     try {
+      // Checked from the file's size alone, before anything is read (review of PR #8).
+      if (importTooLarge(file.size)) {
+        setFailure(importProblemMessage('too-large'));
+        return;
+      }
       const parsed = parseImport(await file.text());
       if (!parsed.ok) {
         setFailure(importProblemMessage(parsed.problem, parsed.record));

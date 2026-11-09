@@ -174,6 +174,8 @@ export const ACCESS_REQUEST_FAILED =
 /** Why a file could not be imported (D-027). Nothing was saved in any of these cases. */
 export function importProblemMessage(problem: ImportProblem, record?: number): string {
   switch (problem) {
+    case 'too-large':
+      return 'This file is larger than any PromoBase export, so it was not opened. Choose a file made with Export. Nothing was imported.';
     case 'not-json':
     case 'not-an-export':
       return 'This file is not a PromoBase export. Choose a file made with Export. Nothing was imported.';

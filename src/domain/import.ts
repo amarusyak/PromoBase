@@ -8,7 +8,23 @@ import { parseStoredState, SCHEMA_VERSION } from './stored-state';
  * id is already saved is skipped and reported.
  */
 
+/**
+ * The largest file an import reads (review of PR #8). A real export is far
+ * smaller: 100 codes, each with at most a 2,000-character address, a
+ * 140-character note and a 100-character code, come to roughly 300 kB. The
+ * size is known without reading the file, so anything larger is refused
+ * before it is loaded into memory.
+ */
+export const IMPORT_MAX_BYTES = 1024 * 1024;
+
+/** Whether a file of this many bytes is refused unread. */
+export function importTooLarge(bytes: number): boolean {
+  return bytes > IMPORT_MAX_BYTES;
+}
+
 export type ImportProblem =
+  /** Larger than any export can be; not read at all. */
+  | 'too-large'
   /** Not JSON at all. */
   | 'not-json'
   /** JSON, but not a PromoBase export. */

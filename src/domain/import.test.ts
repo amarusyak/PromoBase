@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { sampleRecord } from '../../tests/support/sample-record';
 import { exportDocument, exportText } from './export';
-import { parseImport, planImport } from './import';
+import { IMPORT_MAX_BYTES, importTooLarge, parseImport, planImport } from './import';
 import { RECORD_LIMIT, type PromoCodeRecord } from './record';
 import { SCHEMA_VERSION } from './stored-state';
 
@@ -79,6 +79,30 @@ describe('parseImport', () => {
 
   it('takes an empty export', () => {
     expect(parseImport(file([]))).toEqual({ ok: true, records: [] });
+  });
+});
+
+describe('importTooLarge (review of PR #8)', () => {
+  it('lets through a file up to 1 MB and refuses anything larger', () => {
+    expect(IMPORT_MAX_BYTES).toBe(1024 * 1024);
+    expect(importTooLarge(IMPORT_MAX_BYTES)).toBe(false);
+    expect(importTooLarge(IMPORT_MAX_BYTES + 1)).toBe(true);
+  });
+
+  it('leaves room for the largest export 100 codes can make', () => {
+    const longest = Array.from({ length: RECORD_LIMIT }, (_, i) =>
+      code(`id-${String(i).padStart(32, '0')}`, {
+        promoCode: 'C'.repeat(100),
+        merchantDomain: 'shop.example',
+        resourceUrl: `https://shop.example/${'ü'.repeat(1980)}`,
+        note: '☕'.repeat(70),
+        startDate: '2026-01-01',
+        expiryDate: '2027-01-01',
+      }),
+    );
+    const bytes = new TextEncoder().encode(exportText(exportDocument(longest, NOW))).length;
+    expect(importTooLarge(bytes)).toBe(false);
+    expect(bytes).toBeLessThan(IMPORT_MAX_BYTES / 2);
   });
 });
 
