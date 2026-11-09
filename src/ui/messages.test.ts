@@ -233,6 +233,9 @@ describe('unreadable saved codes (D-124)', () => {
       'Chrome is downloading a copy. Your saved codes are unchanged.',
     );
     expect(savedCopyMessage({ ok: true })).not.toMatch(/\.json/);
-    expect(savedCopyMessage({ ok: false })).toContain('could not read');
+    expect(savedCopyMessage({ ok: false, problem: 'unavailable' })).toContain('could not read');
+    expect(savedCopyMessage({ ok: false, problem: 'missing' })).toBe(
+      'There is no saved data to copy any more. Reload the library to see where things stand.',
+    );
   });
 });

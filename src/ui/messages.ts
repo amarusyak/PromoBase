@@ -1,3 +1,4 @@
+import type { StoredValueProblem } from '../data/load-state';
 import type { UnreadableState } from '../data/record-store';
 import { MAX_YEAR, MIN_YEAR } from '../domain/dates';
 import { readableDomain } from '../domain/readable-domain';
@@ -138,9 +139,12 @@ export function canSaveCopy(cause: UnreadableState): boolean {
  * After "Save a copy" (D-124). The file is not named: Chrome may rename it
  * (a second copy in the same minute gets " (1)") or ask where to save it.
  */
-export function savedCopyMessage(saved: { ok: boolean }): string {
-  return saved.ok
-    ? 'Chrome is downloading a copy. Your saved codes are unchanged.'
+export function savedCopyMessage(
+  saved: { ok: true } | { ok: false; problem: StoredValueProblem },
+): string {
+  if (saved.ok) return 'Chrome is downloading a copy. Your saved codes are unchanged.';
+  return saved.problem === 'missing'
+    ? 'There is no saved data to copy any more. Reload the library to see where things stand.'
     : 'PromoBase could not read the stored data to copy it. Close PromoBase and try again.';
 }
 
