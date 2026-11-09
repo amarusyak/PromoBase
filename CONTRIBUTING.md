@@ -14,6 +14,7 @@ Thanks for helping. PromoBase is small on purpose, so a few rules keep it that w
 - Logic lives in pure modules under `src/domain`: no `chrome.*`, and the current time is passed in.
 - Chrome is only called from `src/platform`, behind small interfaces that tests can replace.
 - Every logic module has its unit tests next to it (`name.test.ts`). `tests/` holds checks that belong to no single module: the manifest, the service worker's imports, the store listing and images, and stored data compatibility.
+- A new production dependency needs a licence file: the build writes `THIRD_PARTY_NOTICES.txt` into `dist/` from every bundled package and fails without one.
 - Permissions: the narrowest that work, added only in the change that first uses them, with a matching change to `tests/manifest.test.ts`.
 
 ## Changing stored data
