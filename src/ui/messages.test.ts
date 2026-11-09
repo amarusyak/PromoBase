@@ -183,6 +183,7 @@ describe('messages for the reminder switch (D-100)', () => {
 describe('messages for an import (D-027)', () => {
   it('says what is wrong with the file, that nothing was imported, and what to do', () => {
     for (const problem of [
+      'too-large',
       'not-json',
       'not-an-export',
       'newer-version',
@@ -193,6 +194,7 @@ describe('messages for an import (D-027)', () => {
     }
     expect(importProblemMessage('invalid-record', 3)).toContain('Code 3 in this file');
     expect(importProblemMessage('newer-version')).toContain('Update the extension');
+    expect(importProblemMessage('too-large')).toContain('larger than any PromoBase export');
   });
 
   it('never shows the technical reason of a failed save', () => {
