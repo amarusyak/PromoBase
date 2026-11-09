@@ -7,7 +7,7 @@ import { recordStatus } from '../domain/record-status';
 import { recordsForHost } from '../domain/site-codes';
 import { siteReminderState } from '../domain/site-reminders';
 import { CodeCard } from '../ui/CodeCard';
-import { RETENTION_NOTICE, STORAGE_MODE_SHORT } from '../ui/copy';
+import { retentionNotice, SAVE_COPY, STORAGE_MODE_SHORT } from '../ui/copy';
 import { CopyCode } from '../ui/CopyButton';
 import { EMPTY_INPUT, isBlankInput } from '../ui/draft';
 import { changeFailureMessage, LIMIT_REACHED } from '../ui/messages';
@@ -36,9 +36,16 @@ export function Popup() {
     <main className="popup">
       <h1 className="visually-hidden">PromoBase</h1>
       {summary.kind === 'problem' ? (
-        <p className="problem" role="alert">
-          {summary.message}
-        </p>
+        <div className="problem" role="alert">
+          <p>{summary.message}</p>
+          {summary.canSaveCopy && (
+            <p>
+              <a href="library.html" target="_blank" rel="noreferrer">
+                {SAVE_COPY.popupLink}
+              </a>
+            </p>
+          )}
+        </div>
       ) : (
         <Tabs records={summary.records} atLimit={summary.atLimit} draft={draft} context={context} />
       )}
@@ -51,7 +58,7 @@ export function Popup() {
         </p>
       )}
       <p className="popup__notice muted">
-        {STORAGE_MODE_SHORT}. {RETENTION_NOTICE}
+        {STORAGE_MODE_SHORT}. {retentionNotice(summary.kind === 'ready')}
       </p>
     </main>
   );

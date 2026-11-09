@@ -12,6 +12,8 @@ import {
   LIMIT_REACHED,
   switchFailureMessage,
   unreadableMessage,
+  canSaveCopy,
+  savedCopyMessage,
   warningMessage,
 } from './messages';
 
@@ -201,5 +203,39 @@ describe('messages for an import (D-027)', () => {
     const message = importFailureMessage({ problem: 'write-failed', reason: 'internal-detail' });
     expect(message).not.toContain('internal-detail');
     expect(message).toContain('Nothing was changed');
+  });
+});
+
+describe('unreadable saved codes (D-124)', () => {
+  it('a newer layout: says the codes come back with that version and offers a copy', () => {
+    const message = unreadableMessage({ status: 'unsupported-version', found: 2 });
+    expect(message).toContain('newer version');
+    expect(message).toContain('come back');
+    expect(message).toContain('Save a copy');
+    expect(message).not.toMatch(/update the extension/i);
+  });
+
+  it('damaged data: says nothing was changed, offers a copy and a report without the codes', () => {
+    const message = unreadableMessage({ status: 'corrupt', reason: 'x' });
+    expect(message).toContain('exactly as they are');
+    expect(message).toContain('Save a copy');
+    expect(message).toContain('leaving your codes out');
+  });
+
+  it('offers a copy only when Chrome could read the stored value', () => {
+    expect(canSaveCopy({ status: 'unsupported-version', found: 2 })).toBe(true);
+    expect(canSaveCopy({ status: 'corrupt', reason: 'x' })).toBe(true);
+    expect(canSaveCopy({ status: 'unavailable', reason: 'x' })).toBe(false);
+  });
+
+  it('confirms the copy without naming a file Chrome may rename, or says it could not be made', () => {
+    expect(savedCopyMessage({ ok: true })).toBe(
+      'Chrome is downloading a copy. Your saved codes are unchanged.',
+    );
+    expect(savedCopyMessage({ ok: true })).not.toMatch(/\.json/);
+    expect(savedCopyMessage({ ok: false, problem: 'unavailable' })).toContain('could not read');
+    expect(savedCopyMessage({ ok: false, problem: 'missing' })).toBe(
+      'There is no saved data to copy any more. Reload the library to see where things stand.',
+    );
   });
 });
