@@ -2,7 +2,7 @@
 
 A Chrome extension for saving promo codes - especially the ones you pick up from creators and online content - and getting reminded of them when you visit the merchant's site.
 
-**Status:** early development. Codes can be saved from the popup and managed in the library. On a site you have codes for, the toolbar icon changes and the popup lists them. Automatic reminders are not built yet.
+**Status:** early development. Codes can be saved from the popup and managed in the library. On a site you have codes for, the toolbar icon changes and the popup lists them. Reminders can be switched on per site, which asks Chrome for access to that site; PromoBase then opens by itself, once per visit, when you go to that site.
 
 ## What it does (first release)
 

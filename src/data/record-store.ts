@@ -5,6 +5,7 @@ import {
   type RecordInput,
   type RecordInputErrors,
 } from '../domain/record-input';
+import { siteRemindersOn } from '../domain/site-reminders';
 import {
   parseStoredState,
   SCHEMA_VERSION,
@@ -65,9 +66,14 @@ export type Updated = { ok: true; record: PromoCodeRecord; previous: PromoCodeRe
 /** `record` is the record that was removed. */
 export type Deleted = { ok: true; record: PromoCodeRecord };
 
+/** `records` are the records of the site as they are now stored. */
+export type SiteSwitched = { ok: true; records: PromoCodeRecord[] };
+
 export type CreateResult = Created | InvalidInput | LimitReached | StoreFailure;
 export type UpdateResult = Updated | InvalidInput | NotFound | StoreFailure;
 export type DeleteResult = Deleted | NotFound | StoreFailure;
+/** `not-found` here means no record is saved for that site. */
+export type SwitchResult = SiteSwitched | NotFound | StoreFailure;
 
 function writeFailed(reason: string): StoreFailure {
   return { ok: false, problem: 'write-failed', reason };
@@ -113,8 +119,9 @@ async function changeRecords<Done extends { ok: true }, Refused extends { ok: fa
 }
 
 /**
- * Saves a new record (PB-004). Reminders start switched off; turning them on
- * is a separate step the user is offered after saving (D-064).
+ * Saves a new record (PB-004). Reminders follow the site's switch (D-100): a
+ * code for a site whose reminders are on gets them too. Otherwise they start
+ * off, and turning them on is a separate step offered after saving (D-064).
  */
 export async function createRecord(
   deps: RecordStoreDeps,
@@ -129,7 +136,7 @@ export async function createRecord(
     const record: PromoCodeRecord = {
       id: deps.newId(),
       ...checked.fields,
-      notify: false,
+      notify: followsSite(records, checked.fields.merchantDomain),
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -147,9 +154,10 @@ export async function createRecord(
  * fields are stored the way the checks give them and a key this build does
  * not know is not carried over.
  *
- * Reminders stay on only while the merchant domain stays the same: the user
- * agreed to reminders on that site, not on whichever site the record points to
- * after an edit, so a changed or removed domain switches them off (PB-004).
+ * Reminders are switched per site (D-100). While the merchant domain stays
+ * the same they stay as they are. A record moved to another site takes that
+ * site's switch, so it is on only if the person turned reminders on for that
+ * site; a record left without a site has them off.
  */
 export async function updateRecord(
   deps: RecordStoreDeps,
@@ -166,7 +174,11 @@ export async function updateRecord(
     const record: PromoCodeRecord = {
       id: previous.id,
       ...fields,
-      notify: previous.notify && fields.merchantDomain === previous.merchantDomain,
+      notify:
+        fields.merchantDomain === previous.merchantDomain
+          ? previous.notify
+          : // The record itself still has its old domain, so it never counts here.
+            followsSite(records, fields.merchantDomain),
       createdAt: previous.createdAt,
       updatedAt: deps.now().toISOString(),
     };
@@ -190,4 +202,39 @@ export async function deleteRecord(
       done: { ok: true, record },
     };
   });
+}
+
+/**
+ * Turns a site's reminders on or off (D-100): sets notify on every record for
+ * that merchant domain, and on no other. Nothing else about the records
+ * changes, not even `updatedAt`, since no code was edited. Turning on is only
+ * half of it: the caller then asks Chrome for access to the site (D-057).
+ */
+export async function setSiteReminders(
+  deps: Pick<RecordStoreDeps, 'store' | 'lock'>,
+  merchantDomain: string,
+  on: boolean,
+): Promise<SwitchResult> {
+  return changeRecords<SiteSwitched, NotFound>(deps, (records) => {
+    if (!records.some((record) => record.merchantDomain === merchantDomain)) {
+      return { ok: false, problem: 'not-found' };
+    }
+    const next = records.map((record) =>
+      record.merchantDomain === merchantDomain && record.notify !== on
+        ? { ...record, notify: on }
+        : record,
+    );
+    return {
+      records: next,
+      done: {
+        ok: true,
+        records: next.filter((record) => record.merchantDomain === merchantDomain),
+      },
+    };
+  });
+}
+
+/** Notify for a record saved for this site: what the site's switch says. */
+function followsSite(records: readonly PromoCodeRecord[], merchantDomain: string | undefined) {
+  return merchantDomain !== undefined && siteRemindersOn(records, merchantDomain);
 }

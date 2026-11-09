@@ -8,7 +8,13 @@ import type { Lock } from '../platform/lock';
 import { memoryStore } from '../platform/memory-store';
 import { serialLock } from '../platform/serial-lock';
 import { loadStoredState } from './load-state';
-import { createRecord, deleteRecord, updateRecord, type RecordStoreDeps } from './record-store';
+import {
+  createRecord,
+  deleteRecord,
+  setSiteReminders,
+  updateRecord,
+  type RecordStoreDeps,
+} from './record-store';
 
 const FIRST_MOMENT = Date.UTC(2026, 9, 9, 12, 0, 0);
 
@@ -918,5 +924,169 @@ describe('changes made at the same moment (D-053)', () => {
     ]);
     const loaded = await loadStoredState(inner);
     expect(loaded.status === 'ok' && loaded.state.records).toHaveLength(RECORD_LIMIT);
+  });
+});
+
+describe('reminders are switched per site (D-100)', () => {
+  const site = (id: string, merchantDomain: string, notify: boolean, extra = {}) =>
+    sampleRecord({ id, promoCode: id.toUpperCase(), merchantDomain, notify, ...extra });
+
+  describe('setSiteReminders', () => {
+    it('turns on every record of the site and no other', async () => {
+      const initial = stateWith(
+        site('a', 'shop.example', false),
+        site('b', 'other.example', false),
+        site('c', 'shop.example', false),
+        site('d', 'help.shop.example', false),
+        sampleRecord({ id: 'e' }),
+      );
+      const { deps, records } = setup(initial);
+
+      const result = await setSiteReminders(deps, 'shop.example', true);
+
+      expect(result).toMatchObject({
+        ok: true,
+        records: [
+          { id: 'a', notify: true },
+          { id: 'c', notify: true },
+        ],
+      });
+      expect((await records()).map((r) => [r.id, r.notify])).toEqual([
+        ['a', true],
+        ['b', false],
+        ['c', true],
+        ['d', false],
+        ['e', false],
+      ]);
+    });
+
+    it('turns every record of the site off, including one that was on alone', async () => {
+      const { deps, records } = setup(
+        stateWith(site('a', 'shop.example', true), site('b', 'shop.example', false)),
+      );
+
+      await setSiteReminders(deps, 'shop.example', false);
+
+      expect((await records()).map((r) => r.notify)).toEqual([false, false]);
+    });
+
+    it('changes nothing else, not even updatedAt, and keeps the order', async () => {
+      const a = site('a', 'shop.example', false, { note: 'kept', updatedAt: moment(-50) });
+      const b = site('b', 'other.example', true);
+      const { deps, records } = setup(stateWith(a, b));
+
+      await setSiteReminders(deps, 'shop.example', true);
+
+      expect(await records()).toStrictEqual([{ ...a, notify: true }, b]);
+    });
+
+    it('reports a site without records and writes nothing', async () => {
+      const initial = stateWith(site('a', 'shop.example', false));
+      const { deps, writes } = setup(initial);
+
+      expect(await setSiteReminders(deps, 'help.shop.example', true)).toEqual({
+        ok: false,
+        problem: 'not-found',
+      });
+      expect(writes).toEqual([]);
+    });
+
+    it('leaves data it cannot read untouched (D-042)', async () => {
+      const initial = { schemaVersion: SCHEMA_VERSION + 1, records: [] };
+      const { deps, writes, stored } = setup(initial);
+
+      expect(await setSiteReminders(deps, 'shop.example', true)).toMatchObject({
+        ok: false,
+        problem: 'unreadable',
+      });
+      expect(writes).toEqual([]);
+      expect(await stored()).toStrictEqual(initial);
+    });
+
+    it('reports a write storage refused', async () => {
+      const { deps } = setup(stateWith(site('a', 'shop.example', false)));
+      const failing: RecordStoreDeps = {
+        ...deps,
+        store: { get: (key) => deps.store.get(key), set: () => Promise.reject(new Error('quota')) },
+      };
+
+      expect(await setSiteReminders(failing, 'shop.example', true)).toEqual({
+        ok: false,
+        problem: 'write-failed',
+        reason: 'quota',
+      });
+    });
+  });
+
+  describe('a new code', () => {
+    it.each([
+      ['a site with reminders on gets them too', 'shop.example', true],
+      ['a site with reminders off does not', 'other.example', false],
+      ['an address on a subdomain of a site that is on gets them', 'www.shop.example/sale', true],
+      ['another shop on a shared platform is another site', 'beta.github.io', false],
+      ['a new site starts off', 'new.example', false],
+    ])('for %s', async (_label, resourceUrl, expected) => {
+      const { deps } = setup(
+        stateWith(
+          site('a', 'shop.example', true),
+          site('b', 'other.example', false),
+          site('c', 'alpha.github.io', true),
+        ),
+      );
+
+      const result = await createRecord(deps, input({ promoCode: 'NEW', resourceUrl }));
+
+      expect(result).toMatchObject({ ok: true, record: { notify: expected } });
+    });
+
+    it('without a site has reminders off', async () => {
+      const { deps } = setup(stateWith(site('a', 'shop.example', true)));
+
+      expect(await createRecord(deps, input())).toMatchObject({
+        ok: true,
+        record: { notify: false },
+      });
+    });
+  });
+
+  describe('an edit that moves a code to another site', () => {
+    it('takes the switch of a site that is on', async () => {
+      const { deps, records } = setup(
+        stateWith(site('a', 'shop.example', true), site('b', 'other.example', false)),
+      );
+
+      await updateRecord(deps, 'b', input({ promoCode: 'B', resourceUrl: 'shop.example' }));
+
+      expect((await records()).map((r) => [r.id, r.merchantDomain, r.notify])).toEqual([
+        ['a', 'shop.example', true],
+        ['b', 'shop.example', true],
+      ]);
+    });
+
+    it('takes the switch of a site that is off, even when it was on before', async () => {
+      const { deps, records } = setup(
+        stateWith(site('a', 'shop.example', true), site('b', 'other.example', false)),
+      );
+
+      await updateRecord(deps, 'a', input({ promoCode: 'A', resourceUrl: 'other.example' }));
+
+      expect((await records()).map((r) => r.notify)).toEqual([false, false]);
+    });
+
+    it('does not count itself: the only code of a site that is on, moved to a new site, is off there', async () => {
+      const { deps, records } = setup(stateWith(site('a', 'shop.example', true)));
+
+      await updateRecord(deps, 'a', input({ promoCode: 'A', resourceUrl: 'new.example' }));
+
+      expect(await records()).toMatchObject([{ merchantDomain: 'new.example', notify: false }]);
+    });
+
+    it('keeps its switch while the site stays the same', async () => {
+      const { deps, records } = setup(stateWith(site('a', 'shop.example', true)));
+
+      await updateRecord(deps, 'a', input({ promoCode: 'RENAMED', resourceUrl: 'shop.example' }));
+
+      expect(await records()).toMatchObject([{ promoCode: 'RENAMED', notify: true }]);
+    });
   });
 });

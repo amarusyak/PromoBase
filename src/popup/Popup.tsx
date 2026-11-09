@@ -3,7 +3,9 @@ import { createRecord } from '../data/record-store';
 import type { PromoCodeRecord } from '../domain/record';
 import type { RecordInput } from '../domain/record-input';
 import { searchRecords, sortRecords } from '../domain/record-list';
+import { recordStatus } from '../domain/record-status';
 import { recordsForHost } from '../domain/site-codes';
+import { siteReminderState } from '../domain/site-reminders';
 import { CodeCard } from '../ui/CodeCard';
 import { RETENTION_NOTICE, STORAGE_MODE_SHORT } from '../ui/copy';
 import { CopyCode } from '../ui/CopyButton';
@@ -12,10 +14,12 @@ import { changeFailureMessage, LIMIT_REACHED } from '../ui/messages';
 import { RecordForm, type SubmitOutcome } from '../ui/RecordForm';
 import { merchantName, viewRecord } from '../ui/record-view';
 import { openingTab, siteLabel, type PopupTab, type SiteLabel } from '../ui/site-view';
+import { SiteReminder } from '../ui/SiteReminder';
 import { summarizeState } from '../ui/state-summary';
 import { store } from '../ui/store';
 import { useDraft, type Draft } from '../ui/use-draft';
 import { usePopupContext, type PopupContext } from '../ui/use-popup-context';
+import { useSiteAccess } from '../ui/use-site-access';
 import { useStoredState } from '../ui/use-stored-state';
 import { useToday } from '../ui/use-today';
 
@@ -67,7 +71,13 @@ function Tabs({ records, atLimit, draft, context }: TabsProps) {
   const today = useToday();
   const { host } = context;
   const site = host === undefined ? undefined : siteLabel(host);
-  const siteRecords = host === undefined ? [] : sortRecords(recordsForHost(records, host), today);
+  // A popup opened by a reminder leaves out codes that have not started (D-022).
+  const siteRecords =
+    host === undefined
+      ? []
+      : sortRecords(recordsForHost(records, host), today).filter(
+          (record) => !context.automatic || recordStatus(record, today) !== 'upcoming',
+        );
 
   // Chosen once, when the popup opens; a save in the Add tab must not move the person away.
   const [tab, setTab] = useState<PopupTab>(() => openingTab(siteRecords.length));
@@ -77,6 +87,25 @@ function Tabs({ records, atLimit, draft, context }: TabsProps) {
   const [form, setForm] = useState({ key: 0, initial: draft.initial });
   const latest = useRef(draft.initial);
   const [query, setQuery] = useState('');
+
+  // The reminder switches shown: one per site of this tab's codes, and the
+  // site of a code just saved (D-100).
+  const siteDomains = [
+    ...new Set(siteRecords.flatMap((record) => record.merchantDomain ?? [])),
+  ].sort();
+  const savedDomain = justSaved?.merchantDomain;
+  const access = useSiteAccess(
+    savedDomain === undefined ? siteDomains : [...siteDomains, savedDomain],
+  );
+  const reminder = (domain: string) =>
+    access === undefined ? null : (
+      <SiteReminder
+        key={domain}
+        domain={domain}
+        state={siteReminderState(records, domain, access.get(domain) ?? false)}
+        reminded={context.automatic}
+      />
+    );
 
   function remember(input: RecordInput) {
     latest.current = input;
@@ -191,6 +220,7 @@ function Tabs({ records, atLimit, draft, context }: TabsProps) {
                 <CodeCard key={record.id} row={viewRecord(record, today)} />
               ))}
             </ul>
+            {siteDomains.map(reminder)}
             {site.address !== undefined && !atLimit && (
               <button
                 className="button button--quiet"
@@ -250,7 +280,11 @@ function Tabs({ records, atLimit, draft, context }: TabsProps) {
 
       <Panel id="add" shown={tab === 'add'}>
         {justSaved !== undefined ? (
-          <SavedTicket record={justSaved} onAddAnother={() => setJustSaved(undefined)} />
+          <SavedTicket
+            record={justSaved}
+            reminder={savedDomain === undefined ? null : reminder(savedDomain)}
+            onAddAnother={() => setJustSaved(undefined)}
+          />
         ) : atLimit ? (
           <p className="problem">{LIMIT_REACHED}</p>
         ) : (
@@ -292,11 +326,13 @@ function Panel({ id, shown, children }: { id: PopupTab; shown: boolean; children
 
 interface SavedTicketProps {
   record: PromoCodeRecord;
+  /** The site's reminder switch, offered right after a save (D-064). */
+  reminder: ReactNode;
   onAddAnother: () => void;
 }
 
 /** Confirms a save, shown only after storage has accepted it (PB-014). */
-function SavedTicket({ record, onAddAnother }: SavedTicketProps) {
+function SavedTicket({ record, reminder, onAddAnother }: SavedTicketProps) {
   const merchant =
     record.merchantDomain === undefined ? undefined : merchantName(record.merchantDomain);
   return (
@@ -312,6 +348,7 @@ function SavedTicket({ record, onAddAnother }: SavedTicketProps) {
           ? 'Saved without a site. You can add one in the library.'
           : `For ${merchant.name}.`}
       </p>
+      {reminder}
       <button className="button" type="button" autoFocus onClick={onAddAnother}>
         Add another
       </button>

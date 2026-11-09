@@ -3,10 +3,12 @@ import { deriveMerchantDomain } from '../domain/derive-merchant-domain';
 import { EMPTY_INPUT } from './draft';
 import { validateRecordInput, type RecordInput } from '../domain/record-input';
 import {
+  ACCESS_REQUEST_FAILED,
   changeFailureMessage,
   errorMessages,
   FIELD_ORDER,
   LIMIT_REACHED,
+  switchFailureMessage,
   unreadableMessage,
   warningMessage,
 } from './messages';
@@ -154,5 +156,24 @@ describe('messages for a change that did not go through', () => {
     expect(changeFailureMessage({ problem: 'unreadable', cause }, 'save')).toBe(
       unreadableMessage(cause),
     );
+  });
+});
+
+describe('messages for the reminder switch (D-100)', () => {
+  it('says what happened and never the technical reason', () => {
+    const written = switchFailureMessage({ problem: 'write-failed', reason: 'internal-detail' });
+    expect(written).toContain('Nothing was changed');
+    expect(written).toContain('Try again');
+    expect(written).not.toContain('internal-detail');
+    expect(switchFailureMessage({ problem: 'not-found' })).toContain('deleted in another window');
+  });
+
+  it('reuses the reading messages for data that cannot be read', () => {
+    const cause = { status: 'corrupt', reason: 'x' } as const;
+    expect(switchFailureMessage({ problem: 'unreadable', cause })).toBe(unreadableMessage(cause));
+  });
+
+  it('names the button that asks Chrome again (D-058)', () => {
+    expect(ACCESS_REQUEST_FAILED).toContain('Allow access');
   });
 });
