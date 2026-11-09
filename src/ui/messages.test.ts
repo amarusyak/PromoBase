@@ -6,6 +6,8 @@ import {
   ACCESS_REQUEST_FAILED,
   changeFailureMessage,
   errorMessages,
+  importFailureMessage,
+  importProblemMessage,
   FIELD_ORDER,
   LIMIT_REACHED,
   switchFailureMessage,
@@ -175,5 +177,29 @@ describe('messages for the reminder switch (D-100)', () => {
 
   it('names the button that asks Chrome again (D-058)', () => {
     expect(ACCESS_REQUEST_FAILED).toContain('Allow access');
+  });
+});
+
+describe('messages for an import (D-027)', () => {
+  it('says what is wrong with the file, that nothing was imported, and what to do', () => {
+    for (const problem of [
+      'too-large',
+      'not-json',
+      'not-an-export',
+      'newer-version',
+      'invalid-record',
+    ] as const) {
+      const message = importProblemMessage(problem, 3);
+      expect(message.toLowerCase()).toContain('nothing was imported');
+    }
+    expect(importProblemMessage('invalid-record', 3)).toContain('Code 3 in this file');
+    expect(importProblemMessage('newer-version')).toContain('Update the extension');
+    expect(importProblemMessage('too-large')).toContain('larger than any PromoBase export');
+  });
+
+  it('never shows the technical reason of a failed save', () => {
+    const message = importFailureMessage({ problem: 'write-failed', reason: 'internal-detail' });
+    expect(message).not.toContain('internal-detail');
+    expect(message).toContain('Nothing was changed');
   });
 });

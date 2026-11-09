@@ -63,3 +63,17 @@ export function reminderExplanation(site: string): { title: string; paragraphs: 
     ],
   };
 }
+
+/**
+ * Several sites have reminders on but no access from Chrome, for example after
+ * an import. One button asks for all of them in one Chrome dialog, after this
+ * explanation (D-061).
+ */
+export function waitingSitesText(sites: readonly string[]): { text: string; action: string } {
+  return {
+    text:
+      `Reminders are on for ${sites.length} sites that Chrome has not given PromoBase access to yet: ${sites.join(', ')}. ` +
+      'Chrome will ask once for all of them. PromoBase uses the access only to notice that a tab is on one of these sites.',
+    action: `Allow access for ${sites.length} sites`,
+  };
+}

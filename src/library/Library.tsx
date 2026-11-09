@@ -1,17 +1,30 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { createRecord, deleteRecord, updateRecord } from '../data/record-store';
+import { createRecord, deleteRecord, importRecords, updateRecord } from '../data/record-store';
 import type { PromoCodeRecord } from '../domain/record';
 import { recordToInput, type RecordInput } from '../domain/record-input';
+import { exportDocument, exportFileName, exportText } from '../domain/export';
+import { importTooLarge, parseImport } from '../domain/import';
 import { searchRecords } from '../domain/record-list';
-import { siteReminderState } from '../domain/site-reminders';
+import { reminderDomains, siteReminderState } from '../domain/site-reminders';
+import { downloadFile } from '../platform/download';
+import { chromeSiteAccess } from '../platform/site-access';
 import { Brand } from '../ui/Brand';
-import { RETENTION_NOTICE, STORAGE_MODE } from '../ui/copy';
+import { BUTTON_TIPS, RETENTION_NOTICE, STORAGE_MODE } from '../ui/copy';
 import { CopyCode } from '../ui/CopyButton';
 import { EMPTY_INPUT } from '../ui/draft';
-import { changeFailureMessage, LIMIT_REACHED } from '../ui/messages';
+import { importReport, type ImportReport } from '../ui/import-report';
+import {
+  ACCESS_REQUEST_FAILED,
+  changeFailureMessage,
+  importFailureMessage,
+  importProblemMessage,
+  LIMIT_REACHED,
+} from '../ui/messages';
 import { RecordForm, type SubmitOutcome } from '../ui/RecordForm';
-import { groupRecords, type RecordView } from '../ui/record-view';
+import { groupRecords, merchantName, type RecordView } from '../ui/record-view';
+import { waitingSitesText } from '../ui/reminder-view';
 import { summarizeState } from '../ui/state-summary';
+import { Tooltip } from '../ui/Tooltip';
 import { store } from '../ui/store';
 import { SiteReminder } from '../ui/SiteReminder';
 import { useNotice } from '../ui/use-notice';
@@ -33,6 +46,9 @@ export function Library() {
   const [deleting, setDeleting] = useState(false);
   const deleteUnderWay = useRef(false);
   const list = useRef<HTMLDivElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [report, setReport] = useState<ImportReport>();
+  const [importing, setImporting] = useState(false);
   const loaded = result?.status === 'ok' ? result.state.records : [];
   const access = useSiteAccess(loaded.flatMap((record) => record.merchantDomain ?? []));
 
@@ -53,6 +69,46 @@ export function Library() {
   const matches = searchRecords(records, query);
   const groups = groupRecords(matches, today);
   const searching = query.trim() !== '';
+
+  /**
+   * Adds the codes of an export (D-027). The file is checked whole before
+   * anything is saved; saved codes are never changed. What was skipped is
+   * reported and stays on screen until dismissed (owner's trial of E1).
+   */
+  async function importFile(file: File) {
+    if (importing) return;
+    setImporting(true);
+    setReport(undefined);
+    setFailure(undefined);
+    try {
+      // Checked from the file's size alone, before anything is read (review of PR #8).
+      if (importTooLarge(file.size)) {
+        setFailure(importProblemMessage('too-large'));
+        return;
+      }
+      const parsed = parseImport(await file.text());
+      if (!parsed.ok) {
+        setFailure(importProblemMessage(parsed.problem, parsed.record));
+        return;
+      }
+      const outcome = await importRecords(store, parsed.records);
+      if (outcome.ok) setReport(importReport(outcome.plan));
+      else setFailure(importFailureMessage(outcome));
+    } catch {
+      setFailure(importProblemMessage('not-json'));
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  /** Downloads every saved code as JSON (D-027). Nothing leaves the computer. */
+  function exportCodes() {
+    const now = new Date();
+    downloadFile(exportFileName(now), exportText(exportDocument(records, now)));
+    setFailure(undefined);
+    // Short, so the bar does not wrap; Chrome's own download bubble names the file.
+    showNotice(`Exported ${records.length} ${records.length === 1 ? 'code' : 'codes'}.`);
+  }
 
   /** The reminder switch of a row's site (D-100), once Chrome has said what access there is. */
   function reminderFor(id: string): ReactNode {
@@ -114,15 +170,60 @@ export function Library() {
             {notice}
           </span>
         </p>
-        <button
-          className="button"
-          type="button"
-          disabled={summary.atLimit}
-          aria-describedby={summary.atLimit ? 'limit-reached' : undefined}
-          onClick={() => setEditing({ kind: 'add' })}
-        >
-          Add a code
-        </button>
+        <span className="library__actions">
+          <Tooltip text={BUTTON_TIPS.import}>
+            {(tip) => (
+              <button
+                className="button button--quiet"
+                type="button"
+                disabled={importing}
+                aria-describedby={tip}
+                onClick={() => fileInput.current?.click()}
+              >
+                Import
+              </button>
+            )}
+          </Tooltip>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              // Cleared, so choosing the same file again is noticed.
+              event.target.value = '';
+              if (file !== undefined) void importFile(file);
+            }}
+          />
+          {records.length > 0 && (
+            <Tooltip text={BUTTON_TIPS.export}>
+              {(tip) => (
+                <button
+                  className="button button--quiet"
+                  type="button"
+                  aria-describedby={tip}
+                  onClick={exportCodes}
+                >
+                  Export
+                </button>
+              )}
+            </Tooltip>
+          )}
+          <Tooltip text={BUTTON_TIPS.add}>
+            {(tip) => (
+              <button
+                className="button"
+                type="button"
+                disabled={summary.atLimit}
+                aria-describedby={summary.atLimit ? `${tip} limit-reached` : tip}
+                onClick={() => setEditing({ kind: 'add' })}
+              >
+                Add a code
+              </button>
+            )}
+          </Tooltip>
+        </span>
       </div>
       {summary.atLimit && (
         <p className="problem" id="limit-reached">
@@ -146,10 +247,36 @@ export function Library() {
         </div>
       )}
 
+      {report !== undefined && (
+        <section className="library__report" role="status" aria-label="Import result">
+          <p>
+            <strong>{report.summary}</strong>
+          </p>
+          {report.warnings.map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+          <button className="link" type="button" onClick={() => setReport(undefined)}>
+            Dismiss
+          </button>
+        </section>
+      )}
+
+      <WaitingSites
+        sites={
+          access === undefined
+            ? []
+            : reminderDomains(records).filter((domain) => access.get(domain) === false)
+        }
+      />
+
       {failure !== undefined && (
-        <p className="problem" role="alert">
-          {failure}
-        </p>
+        // Stays until the next change or until dismissed (D-090, owner's trial of E1).
+        <div className="problem library__problem" role="alert">
+          <p>{failure}</p>
+          <button className="link" type="button" onClick={() => setFailure(undefined)}>
+            Dismiss
+          </button>
+        </div>
       )}
 
       <div className="library__list" ref={list} tabIndex={-1}>
@@ -216,6 +343,37 @@ export function Library() {
         </FormDialog>
       )}
     </Page>
+  );
+}
+
+/**
+ * Sites with reminders on that Chrome has not given access to, for example
+ * after an import. One click asks for all of them in a single Chrome dialog,
+ * after PromoBase's own explanation (D-061). One such site is handled in its
+ * own row.
+ */
+function WaitingSites({ sites }: { sites: string[] }) {
+  const [failed, setFailed] = useState(false);
+  if (sites.length < 2) return null;
+  const { text, action } = waitingSitesText(sites.map((domain) => merchantName(domain).name));
+  return (
+    <section className="library__waiting" aria-label="Reminders waiting for Chrome's permission">
+      <p>{text}</p>
+      <button
+        className="button"
+        type="button"
+        onClick={() =>
+          void chromeSiteAccess.requestAll(sites).then((answer) => setFailed(answer === 'failed'))
+        }
+      >
+        {action}
+      </button>
+      {failed && (
+        <p className="problem" role="alert">
+          {ACCESS_REQUEST_FAILED}
+        </p>
+      )}
+    </section>
   );
 }
 

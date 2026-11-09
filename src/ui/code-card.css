@@ -36,6 +36,9 @@
 }
 
 .code-card__note {
+  padding-left: 6px;
+  border-left: 2px solid var(--line);
+  font-style: italic;
   overflow-wrap: anywhere;
   white-space: pre-line;
 }

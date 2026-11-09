@@ -8,6 +8,7 @@ A Chrome extension for saving promo codes - especially the ones you pick up from
 
 - Save a promo code with the merchant's URL, an optional note, and optional start and expiry dates.
 - Browse, search, edit and delete saved codes in a local library.
+- Export every saved code to a JSON file from the library, and import such a file back, for example on another computer.
 - Opt in per merchant to a reminder: when you visit that merchant's site, PromoBase shows the matching codes.
 
 ## Supported browser
@@ -19,7 +20,7 @@ Google Chrome desktop, version 127 or later (Manifest V3).
 - Records are stored locally in the browser profile (`chrome.storage.local`). There is no account and no server in the first release.
 - Nothing is uploaded: no promo codes, notes, or visited URLs leave your machine.
 - Site access is optional and requested per merchant, only for merchants you enable reminders for.
-- Local-only storage means records are lost if the extension is removed or the browser profile is deleted.
+- Local-only storage means records are lost if the extension is removed or the browser profile is deleted. Export from the library keeps a copy on your computer, and Import brings it back.
 
 ## Development
 

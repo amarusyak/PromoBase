@@ -15,6 +15,11 @@ export interface SiteAccess {
    * to do after this call (D-057).
    */
   request(domain: string): Promise<AccessAnswer>;
+  /**
+   * Asks for several sites in one Chrome dialog, which lists them all. The
+   * same rules as request apply.
+   */
+  requestAll(domains: readonly string[]): Promise<AccessAnswer>;
   /** Every site access pattern PromoBase holds, in any shape. */
   granted(): Promise<string[]>;
   /** Gives the patterns back. */
@@ -37,6 +42,15 @@ export const chromeSiteAccess: SiteAccess = {
   async request(domain) {
     try {
       return (await chrome.permissions.request({ origins: [accessPattern(domain)] }))
+        ? 'granted'
+        : 'declined';
+    } catch {
+      return 'failed';
+    }
+  },
+  async requestAll(domains) {
+    try {
+      return (await chrome.permissions.request({ origins: domains.map(accessPattern) }))
         ? 'granted'
         : 'declined';
     } catch {

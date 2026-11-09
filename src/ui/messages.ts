@@ -7,6 +7,7 @@ import {
   RECORD_LIMIT,
   RESOURCE_URL_MAX_LENGTH,
 } from '../domain/record';
+import type { ImportProblem } from '../domain/import';
 import type { RecordFields, RecordInputErrors, RecordWarning } from '../domain/record-input';
 
 /**
@@ -169,3 +170,27 @@ export function switchFailureMessage(
  */
 export const ACCESS_REQUEST_FAILED =
   'Chrome did not show its question. Press Allow access to try again.';
+
+/** Why a file could not be imported (D-027). Nothing was saved in any of these cases. */
+export function importProblemMessage(problem: ImportProblem, record?: number): string {
+  switch (problem) {
+    case 'too-large':
+      return 'This file is larger than any PromoBase export, so it was not opened. Choose a file made with Export. Nothing was imported.';
+    case 'not-json':
+    case 'not-an-export':
+      return 'This file is not a PromoBase export. Choose a file made with Export. Nothing was imported.';
+    case 'newer-version':
+      return 'This file was made by a newer version of PromoBase. Update the extension, then import it. Nothing was imported.';
+    case 'invalid-record':
+      return `Code ${record ?? '?'} in this file cannot be read, so nothing was imported. Export again, or fix that code in the file.`;
+  }
+}
+
+/** Saving an import did not go through. */
+export function importFailureMessage(
+  failure: Exclude<ChangeFailure, { problem: 'limit-reached' } | { problem: 'not-found' }>,
+): string {
+  return failure.problem === 'unreadable'
+    ? unreadableMessage(failure.cause)
+    : 'Chrome could not save the imported codes. Nothing was changed. Try again.';
+}
