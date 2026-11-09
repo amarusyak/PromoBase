@@ -1,0 +1,26 @@
+.tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Below the control and aligned to its right edge, since the controls that
+   have tips sit at the right of their row. The text is still in the page when
+   hidden, so aria-describedby can read it. */
+.tooltip__text {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  width: max-content;
+  max-width: 260px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 25%);
+  pointer-events: none;
+}

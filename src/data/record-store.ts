@@ -5,6 +5,7 @@ import {
   type RecordInput,
   type RecordInputErrors,
 } from '../domain/record-input';
+import { planImport, type ImportPlan } from '../domain/import';
 import { siteRemindersOn } from '../domain/site-reminders';
 import {
   parseStoredState,
@@ -74,6 +75,9 @@ export type UpdateResult = Updated | InvalidInput | NotFound | StoreFailure;
 export type DeleteResult = Deleted | NotFound | StoreFailure;
 /** `not-found` here means no record is saved for that site. */
 export type SwitchResult = SiteSwitched | NotFound | StoreFailure;
+
+export type Imported = { ok: true; plan: ImportPlan };
+export type ImportResult = Imported | StoreFailure;
 
 function writeFailed(reason: string): StoreFailure {
   return { ok: false, problem: 'write-failed', reason };
@@ -237,4 +241,20 @@ export async function setSiteReminders(
 /** Notify for a record saved for this site: what the site's switch says. */
 function followsSite(records: readonly PromoCodeRecord[], merchantDomain: string | undefined) {
   return merchantDomain !== undefined && siteRemindersOn(records, merchantDomain);
+}
+
+/**
+ * Adds the records of an export (D-027) after the saved ones. Saved records are
+ * never changed or removed; what was skipped, and why, is in the plan
+ * (planImport). The plan is worked out under the lock, against the records as
+ * stored at that moment.
+ */
+export async function importRecords(
+  deps: Pick<RecordStoreDeps, 'store' | 'lock'>,
+  incoming: readonly PromoCodeRecord[],
+): Promise<ImportResult> {
+  return changeRecords<Imported, never>(deps, (records) => {
+    const plan = planImport(records, incoming);
+    return { records: [...records, ...plan.added], done: { ok: true, plan } };
+  });
 }

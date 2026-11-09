@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { actionLabel, reminderActions, reminderExplanation, reminderStatus } from './reminder-view';
+import {
+  actionLabel,
+  reminderActions,
+  reminderExplanation,
+  reminderStatus,
+  waitingSitesText,
+} from './reminder-view';
 
 describe('reminderActions', () => {
   it('offers reminders while they are off', () => {
@@ -43,5 +49,16 @@ describe('texts', () => {
     expect(paragraphs).toHaveLength(2);
     expect(text).toContain('If you say no, your codes stay saved');
     expect(text).toContain('turn reminders off at any time');
+  });
+});
+
+describe('waitingSitesText', () => {
+  it('names every waiting site, says Chrome asks once, and why access is needed', () => {
+    const { text, action } = waitingSitesText(['a.example', 'münchen.de']);
+    expect(text).toContain('Reminders are on for 2 sites');
+    expect(text).toContain('a.example, münchen.de');
+    expect(text).toContain('Chrome will ask once for all of them');
+    expect(text).toContain('only to notice that a tab is on one of these sites');
+    expect(action).toBe('Allow access for 2 sites');
   });
 });

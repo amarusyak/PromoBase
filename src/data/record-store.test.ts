@@ -11,6 +11,7 @@ import { loadStoredState } from './load-state';
 import {
   createRecord,
   deleteRecord,
+  importRecords,
   setSiteReminders,
   updateRecord,
   type RecordStoreDeps,
@@ -1088,5 +1089,54 @@ describe('reminders are switched per site (D-100)', () => {
 
       expect(await records()).toMatchObject([{ promoCode: 'RENAMED', notify: true }]);
     });
+  });
+});
+
+describe('importRecords (D-027)', () => {
+  it('appends the new records, keeps every saved one exactly as stored and reports the rest', async () => {
+    const savedA = sampleRecord({ id: 'a', promoCode: 'A', note: 'saved' });
+    const { deps, records } = setup(stateWith(savedA));
+    const incoming = [
+      sampleRecord({ id: 'a', promoCode: 'A', note: 'from the file' }),
+      sampleRecord({ id: 'b', promoCode: 'B' }),
+    ];
+
+    const result = await importRecords(deps, incoming);
+
+    expect(result).toMatchObject({
+      ok: true,
+      plan: { sameId: [{ id: 'a' }], added: [{ id: 'b' }] },
+    });
+    expect(await records()).toStrictEqual([savedA, incoming[1]]);
+  });
+
+  it('writes nothing over data it cannot read (D-042)', async () => {
+    const initial = { schemaVersion: SCHEMA_VERSION + 1, records: [] };
+    const { deps, writes } = setup(initial);
+    expect(await importRecords(deps, [sampleRecord()])).toMatchObject({
+      ok: false,
+      problem: 'unreadable',
+    });
+    expect(writes).toEqual([]);
+  });
+
+  it('reports a write storage refused, with nothing changed', async () => {
+    const { deps, records } = setup(stateWith(sampleRecord({ id: 'a' })));
+    const failing: RecordStoreDeps = {
+      ...deps,
+      store: { get: (key) => deps.store.get(key), set: () => Promise.reject(new Error('quota')) },
+    };
+    expect(await importRecords(failing, [sampleRecord({ id: 'b' })])).toEqual({
+      ok: false,
+      problem: 'write-failed',
+      reason: 'quota',
+    });
+    expect((await records()).map((r) => r.id)).toEqual(['a']);
+  });
+
+  it('starts an empty library', async () => {
+    const { deps, records } = setup();
+    await importRecords(deps, [sampleRecord({ id: 'b' })]);
+    expect((await records()).map((r) => r.id)).toEqual(['b']);
   });
 });

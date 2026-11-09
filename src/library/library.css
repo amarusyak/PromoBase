@@ -32,6 +32,23 @@ body {
   gap: 12px;
 }
 
+.library__actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* What an import did, and sites waiting for Chrome: kept until dealt with. */
+.library__report,
+.library__waiting {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--marker);
+  border-radius: 6px;
+  background: var(--wash);
+}
+
 .library__search {
   display: grid;
   gap: 4px;
@@ -137,9 +154,20 @@ body {
   grid-column: 1 / -1;
 }
 
+/* A note is the person's own words, set apart from the controls around it
+   (owner's trial of E1). */
 .code-ticket__note {
+  padding-left: 8px;
+  border-left: 2px solid var(--line);
+  font-style: italic;
   overflow-wrap: anywhere;
   white-space: pre-line;
+}
+
+.library__problem {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
 }
 
 .code-ticket__actions {
@@ -190,15 +218,33 @@ body {
   max-height: calc(100vh - 32px);
   overflow: auto;
   padding: 20px 22px 22px;
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--paper);
+  background: var(--raised);
   color: var(--ink);
-  box-shadow: 0 12px 40px rgb(20 33 61 / 35%);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 35%);
 }
 
+/* The page behind an open dialog is dimmed clearly, so the dialog stands out
+   in both themes (owner's trial of E1). */
 .dialog::backdrop {
   background: rgb(20 33 61 / 55%);
+}
+
+:root {
+  --raised: var(--paper);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Lighter than the page, so the dialog does not sink into it; its fields
+       keep the page's navy and stand out against it. */
+    --raised: #253862;
+  }
+
+  .dialog::backdrop {
+    background: rgb(4 8 18 / 72%);
+  }
 }
 
 .dialog h2 {
