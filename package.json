@@ -17,6 +17,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:tools": "python3 -m unittest discover -s tools -v",
     "check": "npm run lint && npm run typecheck && npm run format:check && npm run test && npm run build"
   },
   "dependencies": {
