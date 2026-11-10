@@ -63,7 +63,7 @@ jobs:
         run: xvfb-run -a -s "-screen 0 2800x2000x24" npm run screenshots
       - name: Keep the store screenshots for 7 days
         if: github.event_name == 'workflow_dispatch' && inputs.screenshots
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: store-screenshots
           path: browser-output/store/
@@ -71,7 +71,7 @@ jobs:
           if-no-files-found: error
       - name: Keep what the checks saw, when they fail
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: browser-output
           path: browser-output/
