@@ -50,7 +50,7 @@ npm test         # unit tests only
 npm run test:browser   # the built extension in a real Chrome; see tests/browser/README.md
 ```
 
-The icons and the store tile are drawn by a script, so they carry no metadata (Python 3.8 or later):
+The icons and the store tile are drawn by a script, so they carry no metadata (Python 3.11 or later):
 
 ```sh
 python3 -m pip install -r tools/requirements.txt

@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # A run on any branch or on main, from the Actions tab.
+  workflow_dispatch:
 
 permissions:
   contents: read
