@@ -35,3 +35,12 @@ Data kept only for the browser session (`chrome.storage.session`: the popup draf
 ## Icons and store images
 
 Icons and the store tile are drawn by `tools/draw-icons.py`, so they carry no third-party art and no metadata. Every PNG in the repository is checked for metadata by `tests/store-listing.test.ts`.
+
+## Dependency updates
+
+Dependabot (`.github/dependabot.yml`) proposes version updates once a month: one pull request per ecosystem (npm, GitHub Actions, the Python tools) for minor and patch releases, and one per package for a major release. A version has to be a week old before it is proposed. Security updates come as soon as an advisory is published. When reviewing one:
+
+- npm pull requests carry the `browser-checks` label, so the browser checks run on them; read the release notes of anything the extension bundles (React, tldts).
+- A tldts update brings a newer Public Suffix List. It changes the site derived for codes saved from then on, never a saved one (D-070).
+- TypeScript is held at 6.0.x (D-040); Dependabot ignores 6.1 and later until the pin is lifted.
+- Chrome for Testing and the tool that installs it are pinned in `.github/workflows/browser.yml` and moved by hand.

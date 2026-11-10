@@ -1,0 +1,68 @@
+# Dependency updates (D-129). Version updates come once a month, grouped so
+# there is one pull request per ecosystem for minor and patch releases and
+# one per package for a major release. A version must have been published for
+# a week before it is proposed (cooldown), so a broken or compromised release
+# is usually withdrawn before it reaches a pull request. Security updates are
+# switched on in the repository settings; they are not held by the schedule
+# or the cooldown.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    # Dependency updates can change what the pages do, so the browser checks
+    # run on them too (D-125).
+    labels:
+      - dependencies
+      - browser-checks
+    groups:
+      npm-minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # TypeScript stays on 6.0.x until typescript-eslint supports a later
+      # version (D-040, CLAUDE.md). Lift this with the pin.
+      - dependency-name: typescript
+        versions:
+          - '>=6.1.0'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    labels:
+      - dependencies
+    groups:
+      # Workflows name actions by major version (actions/checkout@v6), so
+      # most action updates are majors and come one per pull request.
+      actions-minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  # Pillow, for the Python tools (tools/requirements.txt).
+  - package-ecosystem: pip
+    directory: /tools
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 7
+    labels:
+      - dependencies
+    groups:
+      pip-minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
