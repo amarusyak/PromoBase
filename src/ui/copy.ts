@@ -1,9 +1,13 @@
-/** PB-002: where guest records live and what can remove them. */
+/**
+ * PB-002: where saved codes live and what can remove them. Four lines in the
+ * popup with any common font, so its tallest normal state keeps room below
+ * Chrome's 600px limit for wider fonts (D-127, D-128).
+ */
 const RETENTION_RISK =
-  'Your promo codes are saved in this Chrome profile. Clearing browsing history will not remove them. ' +
-  'If you remove PromoBase or reset or lose this Chrome profile, your saved codes may be lost.';
+  'Your codes stay in this Chrome profile when you clear browsing history, ' +
+  'but are lost if you remove PromoBase or reset or lose the profile.';
 
-/** PB-002, D-107: the same, with how to keep a copy (D-027). */
+/** PB-002, D-107, D-128: the same, with how to keep a copy (D-027). */
 export const RETENTION_NOTICE = `${RETENTION_RISK} Keep a copy with Export in the library.`;
 
 /**
@@ -14,11 +18,11 @@ export function retentionNotice(readable: boolean): string {
   return readable ? RETENTION_NOTICE : RETENTION_RISK;
 }
 
-/** PB-001: identifies the storage mode as guest and local. */
-export const STORAGE_MODE = 'Guest mode. Codes stay in this Chrome profile.';
-
-/** The same, for places with room for two words only. The retention notice there says where. */
-export const STORAGE_MODE_SHORT = 'Guest mode';
+/**
+ * PB-001 as amended by D-128: says that codes are kept locally. "Guest mode"
+ * stays out of the interface until accounts exist and it means something.
+ */
+export const STORAGE_MODE = 'Codes stay in this Chrome profile.';
 
 /** Tips for the library's main buttons (owner's trial of E1): one sentence each. */
 export const BUTTON_TIPS = {
