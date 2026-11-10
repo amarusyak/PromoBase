@@ -10,10 +10,12 @@ The tile needs the Lato fonts (SIL Open Font License): pass them, or have them
 installed where the script looks; without them only the icons are drawn.
 
 Every shape is drawn here at 8x and scaled down, so nothing comes from a third
-party, and the files carry no metadata: each one is checked after it is written.
-Nothing is written until every image has been drawn, so a failure while
-drawing leaves the files as they were, and each file is replaced in one step,
-so none is ever left half-written.
+party, and the files carry no metadata. The set is replaced whole or not at
+all: every image is drawn, saved to a temporary file beside its target and
+checked for metadata before any existing file is replaced, so a failure up to
+then (a full disk, say) leaves the previous files as they were. Replacing is
+then a rename in the same folder, which needs no disk space; if one still
+fails, the message names the files already replaced.
 
 Exit codes: 0 done, 1 drawing or writing failed, 2 a missing requirement.
 """
@@ -172,31 +174,55 @@ def chunks(path):
     return found
 
 
-def check_no_metadata(path):
-    """Raises DrawError when the PNG holds anything besides image data."""
+def check_no_metadata(path, target=None):
+    """Raises DrawError when the PNG at `path` (to become `target`) holds anything besides image data."""
     extra = sorted(set(chunks(path)) - {"IHDR", "IDAT", "IEND"})
     if extra:
-        raise DrawError(f"{path} carries chunks other than image data: {', '.join(extra)}")
+        raise DrawError(f"{target or path} carries chunks other than image data: {', '.join(extra)}")
 
 
-def write(image, path):
-    """Saves `image` to `path` in one step, then checks it carries no metadata."""
+def stage(image, path):
+    """Saves `image` to a temporary file beside `path`, checks it carries no metadata, and returns its path."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle, temporary = tempfile.mkstemp(prefix="." + path.stem + "-", suffix=".png", dir=path.parent)
+    os.close(handle)
+    temporary = Path(temporary)
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        handle, temporary = tempfile.mkstemp(suffix=".png", dir=path.parent)
-        os.close(handle)
-        try:
-            image.save(temporary, format="PNG", optimize=True)
-            os.replace(temporary, path)
-        finally:
-            if os.path.exists(temporary):
-                os.remove(temporary)
-    except OSError as error:
-        raise DrawError(f"Could not write {path}: {error}") from error
-    check_no_metadata(path)
+        image.save(temporary, format="PNG", optimize=True)
+        check_no_metadata(temporary, path)
+    except BaseException:
+        temporary.unlink()
+        raise
+    return temporary
+
+
+def write_all(images):
+    """Writes every (image, path) pair, replacing nothing until all of them are saved and checked."""
+    staged = []
+    try:
+        for image, path in images:
+            try:
+                staged.append((stage(image, path), path))
+            except OSError as error:
+                raise DrawError(f"Could not write {path}: {error}. No file was replaced.") from error
+        replaced = []
+        for temporary, path in staged:
+            try:
+                os.replace(temporary, path)
+            except OSError as error:
+                done = ", ".join(p.name for p in replaced) or "none"
+                raise DrawError(
+                    f"Could not replace {path}: {error}. Already replaced: {done}; the rest are as they were. Run it again."
+                ) from error
+            replaced.append(path)
+    finally:
+        for temporary, _ in staged:
+            if temporary.exists():
+                temporary.unlink()
 
 
 def main(argv=None):
+    """The command line: returns the exit code."""
     parser = argparse.ArgumentParser(description="Draw PromoBase's icons and store tile.")
     parser.add_argument("--bold", type=Path, help="Lato-Bold.ttf, for the store tile")
     parser.add_argument("--regular", type=Path, help="Lato-Regular.ttf, for the store tile")
@@ -209,8 +235,8 @@ def main(argv=None):
         images = [(icon(size, padding), out / "public" / "icons" / f"icon-{size}.png") for size, padding in ICONS]
         if fonts is not None:
             images.append((promo_tile(*fonts), out / TILE))
-        for image, path in images:
-            write(image, path)
+        write_all(images)
+        for _, path in images:
             print(f"wrote {path.relative_to(out)}")
     except DrawError as error:
         print(f"draw-icons.py: {error}", file=sys.stderr)

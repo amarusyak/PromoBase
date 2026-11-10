@@ -10,9 +10,13 @@ License): from --fonts, or from where Inter is usually installed.
 It stops with a clear message rather than make a screenshot that would
 mislead: a capture that is missing, not an image, of the wrong size or a
 single colour (a browser window that was never drawn), a caption that does
-not fit, or fonts it cannot find. Every screenshot is made before any file
-is written, each file is replaced in one step, and each is checked for
-metadata after writing. Tests: tools/test_compose_store_screenshots.py.
+not fit, or fonts it cannot find. The set is replaced whole or not at all:
+every screenshot is made, saved to a temporary file beside its target and
+checked for metadata before any existing file is replaced, so a failure up
+to then (a full disk, say) leaves the previous screenshots as they were.
+Replacing is then a rename in the same folder, which needs no disk space; if
+one still fails, the message names the files already replaced.
+Tests: tools/test_compose_store_screenshots.py.
 
 Exit codes: 0 done, 1 a capture or a file failed, 2 a missing requirement.
 """
@@ -208,23 +212,46 @@ def chunks(path):
     return found
 
 
-def write(image, path):
-    """Saves `image` as PNG in one step, then checks it holds image data only."""
+def stage(image, path):
+    """Saves `image` to a temporary file beside `path`, checks it holds image data only, and returns its path."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle, temporary = tempfile.mkstemp(prefix="." + path.stem + "-", suffix=".png", dir=path.parent)
+    os.close(handle)
+    temporary = Path(temporary)
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        handle, temporary = tempfile.mkstemp(suffix=".png", dir=path.parent)
-        os.close(handle)
-        try:
-            image.save(temporary, format="PNG", optimize=True)
-            os.replace(temporary, path)
-        finally:
-            if os.path.exists(temporary):
-                os.remove(temporary)
-    except OSError as error:
-        raise ComposeError(f"could not write {path}: {error}") from error
-    extra = sorted(chunks(path) - {"IHDR", "IDAT", "IEND"})
-    if extra:
-        raise ComposeError(f"{path} carries chunks other than image data: {', '.join(extra)}")
+        image.save(temporary, format="PNG", optimize=True)
+        extra = sorted(chunks(temporary) - {"IHDR", "IDAT", "IEND"})
+        if extra:
+            raise ComposeError(f"{path} would carry chunks other than image data: {', '.join(extra)}")
+    except BaseException:
+        temporary.unlink()
+        raise
+    return temporary
+
+
+def write_all(images):
+    """Writes every (image, path) pair, replacing nothing until all of them are saved and checked."""
+    staged = []
+    try:
+        for image, path in images:
+            try:
+                staged.append((stage(image, path), path))
+            except OSError as error:
+                raise ComposeError(f"could not write {path}: {error}; no screenshot was replaced") from error
+        replaced = []
+        for temporary, path in staged:
+            try:
+                os.replace(temporary, path)
+            except OSError as error:
+                done = ", ".join(p.name for p in replaced) or "none"
+                raise ComposeError(
+                    f"could not replace {path}: {error}. Already replaced: {done}; the rest are as they were. Run it again."
+                ) from error
+            replaced.append(path)
+    finally:
+        for temporary, _ in staged:
+            if temporary.exists():
+                temporary.unlink()
 
 
 def compose(raw, out, fonts_dir=None):
@@ -235,8 +262,8 @@ def compose(raw, out, fonts_dir=None):
     for name, capture, title, body in SHOTS:
         image = framed(captures[capture], title, body, fonts) if title else as_is(captures[capture], capture)
         images.append((image, out / name))
-    for image, path in images:
-        write(image, path)
+    write_all(images)
+    for _, path in images:
         print(f"wrote {path}")
 
 

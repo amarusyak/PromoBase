@@ -7,8 +7,9 @@ import os
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
-from io import StringIO
+from io import BytesIO, StringIO
 from pathlib import Path
+from unittest import mock
 
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
@@ -173,6 +174,59 @@ class DrawIconsTest(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("Could not write", err)
         self.assertEqual(self.written(), [])
+
+    def previous_icons(self):
+        """Puts a previous set of icons in the output folder; returns path -> bytes."""
+        draw_icons.FONT_DIRS = ()
+        icons = self.out / "public" / "icons"
+        icons.mkdir(parents=True)
+        previous = {}
+        for size in ICON_SIZES:
+            buffer = BytesIO()
+            Image.new("RGB", (4, 4), (size, 0, 0)).save(buffer, format="PNG")
+            (icons / f"icon-{size}.png").write_bytes(buffer.getvalue())
+            previous[f"public/icons/icon-{size}.png"] = buffer.getvalue()
+        return previous
+
+    def unchanged(self, previous):
+        """The paths whose bytes in the output folder are still the previous ones."""
+        return sorted(name for name, data in previous.items() if (self.out / name).read_bytes() == data)
+
+    def test_a_disk_that_fills_after_two_files_replaces_none_of_the_previous_icons(self):
+        """A save that fails on the third icon leaves all four previous files, and no temporary ones."""
+        previous = self.previous_icons()
+        save, calls = Image.Image.save, []
+
+        def full_disk(image, *args, **kwargs):
+            calls.append(1)
+            if len(calls) == 3:
+                raise OSError(28, "No space left on device")
+            return save(image, *args, **kwargs)
+
+        with mock.patch.object(Image.Image, "save", full_disk):
+            code, _, err = self.run_script()
+        self.assertEqual(code, 1)
+        self.assertIn("No file was replaced", err)
+        self.assertEqual(self.unchanged(previous), sorted(previous))
+        self.assertEqual(self.written(), sorted(previous))
+
+    def test_a_rename_that_fails_part_way_names_the_icons_already_replaced(self):
+        """If the third rename fails, the message names the two replaced icons and the rest are kept."""
+        previous = self.previous_icons()
+        replace, calls = os.replace, []
+
+        def failing(source, target):
+            calls.append(1)
+            if len(calls) == 3:
+                raise OSError(13, "Permission denied")
+            return replace(source, target)
+
+        with mock.patch.object(draw_icons.os, "replace", failing):
+            code, _, err = self.run_script()
+        self.assertEqual(code, 1)
+        self.assertIn("Already replaced: icon-16.png, icon-32.png", err)
+        self.assertEqual(self.unchanged(previous), ["public/icons/icon-128.png", "public/icons/icon-48.png"])
+        self.assertEqual(self.written(), sorted(previous))
 
     def test_a_file_with_metadata_is_rejected(self):
         """check_no_metadata rejects a PNG with a text chunk and accepts a plain one."""

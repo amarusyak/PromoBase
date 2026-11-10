@@ -10,8 +10,9 @@ import shutil
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
-from io import StringIO
+from io import BytesIO, StringIO
 from pathlib import Path
+from unittest import mock
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -184,6 +185,79 @@ class ComposeTest(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("could not write", err)
         self.assertEqual(self.written(), [])
+
+
+    def previous_set(self):
+        """Puts a previous set of screenshots in the output folder; returns name -> bytes."""
+        self.out.mkdir()
+        previous = {}
+        for index, (name, _, _, _) in enumerate(compose.SHOTS):
+            buffer = BytesIO()
+            Image.new("RGB", (8, 8), (index, 0, 0)).save(buffer, format="PNG")
+            (self.out / name).write_bytes(buffer.getvalue())
+            previous[name] = buffer.getvalue()
+        return previous
+
+    def unchanged(self, previous):
+        """The names whose bytes in the output folder are still the previous ones."""
+        return sorted(name for name, data in previous.items() if (self.out / name).read_bytes() == data)
+
+    @needs_inter
+    def test_a_disk_that_fills_after_two_files_replaces_none_of_the_previous_set(self):
+        """A save that fails on the third screenshot leaves all four previous files, and no temporary ones."""
+        previous = self.previous_set()
+        save, calls = Image.Image.save, []
+
+        def full_disk(image, *args, **kwargs):
+            calls.append(1)
+            if len(calls) == 3:
+                raise OSError(28, "No space left on device")
+            return save(image, *args, **kwargs)
+
+        with mock.patch.object(Image.Image, "save", full_disk):
+            code, _, err = self.run_script()
+        self.assertEqual(code, 1)
+        self.assertIn("No space left on device", err)
+        self.assertIn("no screenshot was replaced", err)
+        self.assertEqual(self.unchanged(previous), sorted(previous))
+        self.assertEqual(self.written(), sorted(previous))
+
+    @needs_inter
+    def test_a_screenshot_that_would_carry_metadata_replaces_none_of_the_previous_set(self):
+        """Metadata found in the last staged file stops the run before any file is replaced."""
+        previous = self.previous_set()
+        real, calls = compose.chunks, []
+
+        def tagged(path):
+            calls.append(1)
+            return real(path) | ({"tEXt"} if len(calls) == 4 else set())
+
+        with mock.patch.object(compose, "chunks", tagged):
+            code, _, err = self.run_script()
+        self.assertEqual(code, 1)
+        self.assertIn("tEXt", err)
+        self.assertEqual(self.unchanged(previous), sorted(previous))
+        self.assertEqual(self.written(), sorted(previous))
+
+    @needs_inter
+    def test_a_rename_that_fails_part_way_names_the_files_already_replaced(self):
+        """If the third rename fails, the message names the two replaced files and the rest are kept."""
+        previous = self.previous_set()
+        replace, calls = os.replace, []
+
+        def failing(source, target):
+            calls.append(1)
+            if len(calls) == 3:
+                raise OSError(13, "Permission denied")
+            return replace(source, target)
+
+        with mock.patch.object(compose.os, "replace", failing):
+            code, _, err = self.run_script()
+        first, second, third, fourth = (name for name, _, _, _ in compose.SHOTS)
+        self.assertEqual(code, 1)
+        self.assertIn(f"Already replaced: {first}, {second}", err)
+        self.assertEqual(self.unchanged(previous), sorted([third, fourth]))
+        self.assertEqual(self.written(), sorted(previous))
 
 
 class HelpersTest(unittest.TestCase):
