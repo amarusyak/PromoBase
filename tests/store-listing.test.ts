@@ -13,14 +13,19 @@ const listing = text['../store/listing.md'] ?? '';
 const privacy = text['../PRIVACY.md'] ?? '';
 
 // Every PNG in the repository, not only the published ones: none may carry
-// metadata such as C2PA Content Credentials (D-098).
+// metadata such as C2PA Content Credentials (D-098). Folders git ignores are
+// left out, so what is checked does not depend on what a local run left behind
+// (browser-output/ holds the screenshots and captures of the browser checks).
 const images = import.meta.glob<string>(
   [
     '../**/*.png',
     '!../node_modules/**',
     '!../dist/**',
     '!../build/**',
+    '!../browser-output/**',
     '!../coverage/**',
+    '!../playwright-report/**',
+    '!../test-results/**',
     '!../.venv/**',
   ],
   { query: '?inline', import: 'default', eager: true },
