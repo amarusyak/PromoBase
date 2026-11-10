@@ -53,10 +53,12 @@ updates:
   # Pillow, for the Python tools (tools/requirements.txt).
   - package-ecosystem: pip
     directory: /tools
-    # Leave the requirement alone while it allows the new release, and widen
-    # it otherwise, so the lower limit is not raised (D-131). `widen` is
-    # listed in the documentation but rejected for pip. Security updates
-    # still raise the lower limit when an advisory needs it.
+    # Leave the requirement alone while it allows the new release, so no
+    # minor or patch update raises the lower limit (D-131). A new major
+    # (Pillow 14) is outside `<14`: its pull request may raise the lower
+    # limit too, and is reviewed against the Python versions the tools run
+    # on. Security updates raise it when an advisory needs it. `widen` is
+    # listed in the documentation but rejected for pip.
     versioning-strategy: increase-if-necessary
     schedule:
       interval: monthly

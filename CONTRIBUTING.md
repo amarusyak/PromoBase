@@ -43,5 +43,5 @@ Dependabot (`.github/dependabot.yml`) proposes version updates once a month: one
 - npm pull requests carry the `browser-checks` label, so the browser checks run on them; read the release notes of anything the extension bundles (React, tldts).
 - A tldts update brings a newer Public Suffix List. It changes the site derived for codes saved from then on, never a saved one (D-070).
 - TypeScript is held at 6.0.x (D-040); Dependabot ignores 6.1 and later until the pin is lifted.
-- For the Python tools Dependabot leaves `tools/requirements.txt` alone while it allows the new release, and widens it otherwise (`increase-if-necessary`); the lower limit, Pillow 13, follows Python 3.11 and is moved by hand (D-131).
+- For the Python tools Dependabot leaves `tools/requirements.txt` alone while it allows the new release (`increase-if-necessary`), so minor and patch updates never raise the lower limit. A new Pillow major is outside `<14`, and its pull request may raise the lower limit as well: check what Python that version needs against where the tools run (D-131).
 - Chrome for Testing and the tool that installs it are pinned in `.github/workflows/browser.yml` and moved by hand.
