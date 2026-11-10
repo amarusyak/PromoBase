@@ -1,0 +1,79 @@
+name: Browser checks
+
+# The built extension, driven in a real Chrome (D-054, D-088, D-125): on every
+# push to main, on a manual run (any branch, optionally with the store
+# screenshots, D-117), and on pull requests that carry the browser-checks
+# label. Not a required check, so an intermittent failure never blocks a merge.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+    inputs:
+      screenshots:
+        description: Also make the Chrome Web Store screenshots
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Chrome for Testing, pinned; moved forward on purpose (D-125).
+  CHROME_FOR_TESTING: 153.0.8010.12
+  BROWSERS_TOOL: '@puppeteer/browsers@3.2.6'
+
+jobs:
+  browser:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'browser-checks')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: tools/requirements.txt
+      - name: Install the virtual display and fonts
+        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends xvfb libxtst6 fonts-inter
+      - run: python -m pip install -r tools/requirements.txt
+      - run: npm ci
+      - run: npm run build
+      - name: Install Chrome for Testing ${{ env.CHROME_FOR_TESTING }}
+        run: |
+          line=$(npx --yes "$BROWSERS_TOOL" install "chrome@$CHROME_FOR_TESTING" --path "$RUNNER_TEMP/browsers" | tail -n 1)
+          chrome=${line#* }
+          test -x "$chrome"
+          "$chrome" --version
+          echo "PROMOBASE_CHROME=$chrome" >> "$GITHUB_ENV"
+      - name: Browser checks
+        run: xvfb-run -a -s "-screen 0 1280x1024x24" npm run test:browser
+      - name: Store screenshots
+        if: github.event_name == 'workflow_dispatch' && inputs.screenshots
+        run: xvfb-run -a -s "-screen 0 2800x2000x24" npm run screenshots
+      - name: Keep the store screenshots for 7 days
+        if: github.event_name == 'workflow_dispatch' && inputs.screenshots
+        uses: actions/upload-artifact@v6
+        with:
+          name: store-screenshots
+          path: browser-output/store/
+          retention-days: 7
+          if-no-files-found: error
+      - name: Keep what the checks saw, when they fail
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: browser-output
+          path: browser-output/
+          retention-days: 7
+          if-no-files-found: ignore
