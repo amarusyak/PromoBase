@@ -3,7 +3,8 @@
 //   xvfb-run -a -s "-screen 0 2800x2000x24" npm run screenshots
 //
 // It drives PromoBase like the browser checks do, with made-up shops on the
-// reserved .example domain, then frames the captures with
+// reserved .example domain and dates counted from the day of the run
+// (tools/store-screenshot-records.mjs), then frames the captures with
 // tools/compose-store-screenshots.py. The results land in
 // browser-output/store/, for a person to look at and commit to store/.
 // Needs PROMOBASE_CHROME (see tests/browser/README.md), Python with Pillow,
@@ -17,7 +18,6 @@ import {
   allowInChromeDialog,
   fill,
   pattern,
-  record,
   saveRecords,
   setColourScheme,
   waitForPopup,
@@ -25,34 +25,17 @@ import {
   warmUpPopup,
 } from '../tests/browser/support/actions.mjs';
 import { startSite } from '../tests/browser/support/site.mjs';
+import { storeRecords } from './store-screenshot-records.mjs';
 
 const RAW = join(OUTPUT, 'store-raw');
 const STORE = join(OUTPUT, 'store');
 const PYTHON = process.env.PROMOBASE_PYTHON ?? 'python3';
 
-const RECORDS = [
-  record('r1', 'AUTUMN15', 'larkspur.example', true, {
-    expiryDate: '2099-11-30',
-    note: '15% off kit, from a cycling channel',
-  }),
-  record('r2', 'FREESHIP', 'larkspur.example', true, { note: 'Free delivery on orders over 40' }),
-  record('r3', 'WINTER20', 'larkspur.example', true, {
-    startDate: '2099-12-01',
-    expiryDate: '2100-01-15',
-  }),
-  record('r4', 'BREW10', 'fernhill-coffee.example', false, {
-    expiryDate: '2099-01-31',
-    note: 'First bag of beans',
-  }),
-  record('r5', 'TRAIL25', 'northpeak.example', true, {
-    note: 'Boots and packs, from a hiking newsletter',
-  }),
-  record('r6', 'READMORE', 'quillbooks.example', false, {
-    expiryDate: '2020-10-31',
-    note: 'Paperbacks only',
-  }),
-  record('r7', 'BIRTHDAY5', undefined, false, { note: 'Show at the till in the town shop' }),
-];
+// The local calendar day, as PromoBase works it out (localToday in src/domain/dates.ts).
+const now = new Date();
+const TODAY = [now.getFullYear(), now.getMonth() + 1, now.getDate()]
+  .map((n, i) => String(n).padStart(i === 0 ? 4 : 2, '0'))
+  .join('-');
 
 async function save(page, name) {
   const { data } = await page.command('Page.captureScreenshot', { format: 'png' });
@@ -71,7 +54,7 @@ try {
   await closeWelcome(browser);
   const library = await browser.open(browser.url('library.html'));
   await waitForText(library, 'main');
-  await saveRecords(library, RECORDS);
+  await saveRecords(library, storeRecords(TODAY));
   await sleep(800);
   await library.command('Runtime.evaluate', {
     expression: `chrome.permissions.request({ origins: ['${pattern('larkspur.example')}', '${pattern('northpeak.example')}'] })`,
@@ -86,6 +69,11 @@ try {
     deviceScaleFactor: 1,
     mobile: false,
   });
+  // The library is longer than the page; the store shows its top without a scrollbar.
+  // Chrome applies this from the next layout of the document, hence the reload.
+  await library.command('Emulation.setScrollbarsHidden', { hidden: true });
+  await library.command('Page.reload', {});
+  await waitForText(library, 'main');
   for (const scheme of ['light', 'dark']) {
     await browser.send('Target.activateTarget', { targetId: library.targetId });
     await setColourScheme(library, scheme);
