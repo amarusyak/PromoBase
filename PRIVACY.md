@@ -1,6 +1,6 @@
 # PromoBase privacy policy
 
-Last updated: 9 November 2026. Applies to PromoBase 0.1.0 for Google Chrome.
+Last updated: 10 November 2026. Applies to PromoBase 0.1.0 for Google Chrome.
 
 PromoBase keeps the promo codes you save and shows them again on the shop's site. Everything it does happens inside your Chrome profile. PromoBase has no server, no account and no analytics, and it makes no network requests.
 
@@ -21,7 +21,7 @@ None of this is sent anywhere. Not to the developer, not to anyone else.
 
 - **The tab you open PromoBase on.** When you click the PromoBase button, it reads that tab's address to show the codes for that shop. Chrome allows this only for the tab and moment you click (the `activeTab` permission).
 - **The toolbar icon.** On the sites of shops you have codes for, Chrome itself turns the icon yellow, from a list of those sites PromoBase gives it (the `declarativeContent` permission). PromoBase is not told which page you are on.
-- **Shops you turn reminders on for.** Only if you choose it, and only after Chrome asks you, PromoBase gets access to one shop's site at a time. It uses that access for one thing: to learn the address of a tab on that site, so it can open by itself and list your codes. It does not read the content of any page, and it never fills in, clicks or changes anything on a page. When no code of a shop has reminders on any more, PromoBase gives that access back.
+- **Shops you turn reminders on for.** Only if you choose it, and only after Chrome asks you, PromoBase gets access to the site of each shop you turn reminders on for, and to nothing else. Chrome may ask about several shops at once, for example after an import. It uses that access for one thing: to learn the address of a tab on that site, so it can open by itself and list your codes. It does not read the content of any page, and it never fills in, clicks or changes anything on a page. When no code of a shop has reminders on any more, PromoBase gives that access back.
 
 PromoBase never sees other sites you visit, your browsing history, passwords, forms, carts or payment details.
 

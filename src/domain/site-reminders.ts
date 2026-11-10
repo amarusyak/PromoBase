@@ -4,8 +4,8 @@ import type { PromoCodeRecord } from './record';
  * Reminders are switched per site (D-100): a site's switch is on while any of
  * its records has notify on, and turning it on or off sets every record for
  * that merchant domain. Opening automatically also needs Chrome's site access
- * for the domain (PB-006), which is asked for one site at a time and never
- * stored: whether it is there is always read from Chrome (D-014).
+ * for the domain (PB-006), which is asked for per site (one request may name
+ * several, D-109) and never stored: whether it is there is always read from Chrome (D-014).
  */
 
 /**
