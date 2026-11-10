@@ -53,9 +53,11 @@ updates:
   # Pillow, for the Python tools (tools/requirements.txt).
   - package-ecosystem: pip
     directory: /tools
-    # Raise only the upper limit when a new major appears, and leave the
-    # lower one alone (D-131); security updates still raise it when needed.
-    versioning-strategy: widen
+    # Leave the requirement alone while it allows the new release, and widen
+    # it otherwise, so the lower limit is not raised (D-131). `widen` is
+    # listed in the documentation but rejected for pip. Security updates
+    # still raise the lower limit when an advisory needs it.
+    versioning-strategy: increase-if-necessary
     schedule:
       interval: monthly
     cooldown:
