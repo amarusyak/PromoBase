@@ -79,7 +79,7 @@ for (const scheme of ['light', 'dark']) {
   });
 }
 
-describe("the popup stays under Chrome's 600px limit (D-084, D-095)", () => {
+describe("the popup keeps room below Chrome's 600px limit (D-084, D-095, D-127)", () => {
   let browser;
   before(async () => {
     browser = await launch();
@@ -110,7 +110,10 @@ describe("the popup stays under Chrome's 600px limit (D-084, D-095)", () => {
     await fill(popup, 'Website or link', 'shop.test');
     await sleep(300);
     const duplicate = await height(popup);
-    assert.ok(empty <= 600, `empty: ${empty}px`);
-    assert.ok(duplicate <= 600, `duplicate warning: ${duplicate}px`);
+    // Measured with Inter (support/fonts.conf), which matches macOS. Wider
+    // fonts, such as DejaVu Sans on Linux, add about 19px (D-127), so the
+    // tallest normal state keeps 20px below Chrome's 600px limit.
+    assert.ok(empty <= 580, `empty: ${empty}px`);
+    assert.ok(duplicate <= 580, `duplicate warning: ${duplicate}px`);
   });
 });
