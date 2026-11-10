@@ -1,7 +1,8 @@
 import { accessPattern } from '../domain/site-reminders';
 
 /**
- * Chrome's site access, one merchant domain at a time (PB-006). What PromoBase
+ * Chrome's site access, per merchant domain (PB-006); one request may name
+ * several (D-109). What PromoBase
  * has is always read from Chrome, never stored (D-014): the person can take it
  * away in Chrome's own menu at any moment.
  */

@@ -111,7 +111,7 @@ def main(argv):
             "Your codes, on the shop's site",
             [
                 "Turn on reminders for a shop, and PromoBase opens by itself when you visit it, with the codes you saved for it.",
-                "Chrome asks you first, one shop at a time.",
+                "Chrome asks before reminders start.",
             ],
             fonts,
         ),

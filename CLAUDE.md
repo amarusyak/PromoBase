@@ -21,7 +21,7 @@ Requirements (PB-xxx) are in the PRD, `docs/PromoBase_Product_Requirements_Docum
 - Chrome APIs are called only from `src/platform`, behind small interfaces that tests can replace.
 - Every logic module has unit tests next to it (`*.test.ts`). Test data is synthetic.
 - A change to `public/manifest.json` needs a matching change in `tests/manifest.test.ts`. Request the narrowest permissions, and add one only in the change that first uses it.
-- Site access is asked for one merchant domain at a time, as `*://*.<domain>/*`, only after PromoBase's own explanation, and from a click (the request is the last thing the click does). Whether it is held is always read from Chrome, never stored. The service worker gives back access no site needs; it never touches access in any other shape.
+- Site access is asked for per merchant domain, as `*://*.<domain>/*` and never in a broader shape, only after PromoBase's own explanation, and from a click (the request is the last thing the click does). One request may name several domains waiting for access (D-109). Whether it is held is always read from Chrome, never stored. The service worker gives back access no site needs; it never touches access in any other shape.
 - A change to the shape of stored data follows the checklist in `CONTRIBUTING.md`: a `SCHEMA_VERSION` bump, a migration in `src/domain/stored-state.ts`, and new frozen fixtures. Frozen fixtures in `tests/fixtures` are never edited.
 - Data that cannot be read is reported and left untouched, never repaired or overwritten.
 - Saved records are changed only through `src/data/record-store.ts`, which holds the state lock for the whole read-change-write. Nothing else writes to the store.

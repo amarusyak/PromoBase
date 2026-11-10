@@ -30,11 +30,11 @@ describe('manifest', () => {
     expect(manifest.permissions).not.toContain('scripting');
   });
 
-  // Site access is never granted at install. It is asked for one site at a time,
-  // when the person turns reminders on for it (PB-006, D-064); optional access
+  // Site access is never granted at install. It is asked for per site, when the
+  // person turns reminders on for it (PB-006, D-064, D-109); optional access
   // shows no warning at install. Declaring it for every http and https site is
   // what lets PromoBase ask for any merchant's site later.
-  it('holds no site access at install, and can ask for one site at a time', () => {
+  it('holds no site access at install, and can ask for any site later', () => {
     const keys = Object.keys(manifest);
     expect(keys).not.toContain('host_permissions');
     expect(manifest.optional_host_permissions).toEqual(['*://*/*']);
