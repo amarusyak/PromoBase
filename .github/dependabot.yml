@@ -20,6 +20,8 @@ updates:
       - browser-checks
     groups:
       npm-minor-and-patch:
+        patterns:
+          - '*'
         update-types:
           - minor
           - patch
@@ -39,9 +41,14 @@ updates:
     labels:
       - dependencies
     groups:
-      actions:
+      # Workflows name actions by major version (actions/checkout@v6), so
+      # most action updates are majors and come one per pull request.
+      actions-minor-and-patch:
         patterns:
           - '*'
+        update-types:
+          - minor
+          - patch
 
   # Pillow, for the Python tools (tools/requirements.txt).
   - package-ecosystem: pip
@@ -52,3 +59,10 @@ updates:
       default-days: 7
     labels:
       - dependencies
+    groups:
+      pip-minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
