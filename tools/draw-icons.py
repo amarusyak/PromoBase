@@ -19,6 +19,7 @@ Exit codes: 0 done, 1 drawing or writing failed, 2 a missing requirement.
 """
 
 import argparse
+import io
 import os
 import struct
 import sys
@@ -56,6 +57,12 @@ FONT_DIRS = (
     Path("/Library/Fonts"),
     Path.home() / ".local" / "share" / "fonts",
 )
+
+
+def load_font(path, size):
+    """The font in exactly this file. Pillow, given a path, would quietly fall
+    back to a system font of the same name; given the bytes, it cannot."""
+    return ImageFont.truetype(io.BytesIO(Path(path).read_bytes()), size)
 
 
 class DrawError(Exception):
@@ -99,8 +106,8 @@ def promo_tile(bold, regular):
     s = SCALE
     image = Image.new("RGBA", (width * s, height * s), NAVY)
     draw = ImageDraw.Draw(image)
-    title_font = ImageFont.truetype(str(bold), 40 * s)
-    line_font = ImageFont.truetype(str(regular), 17 * s)
+    title_font = load_font(bold, 40 * s)
+    line_font = load_font(regular, 17 * s)
     # The text block at the origin: (text, font, top), tops as in the design.
     texts = [("PromoBase", title_font, 0, YELLOW)] + [
         (line, line_font, (56 + i * 24) * s, (243, 246, 251, 255))
@@ -136,7 +143,7 @@ def find_fonts(bold, regular):
             if not path.is_file():
                 raise DrawError(f"Font not found: {path}")
             try:
-                ImageFont.truetype(str(path), 12)
+                load_font(path, 12)
             except OSError as error:
                 raise DrawError(f"Font cannot be read: {path} ({error})") from error
         return bold, regular
@@ -145,7 +152,7 @@ def find_fonts(bold, regular):
         if all(p.is_file() for p in pair):
             try:
                 for p in pair:
-                    ImageFont.truetype(str(p), 12)
+                    load_font(p, 12)
             except OSError:
                 continue
             return pair

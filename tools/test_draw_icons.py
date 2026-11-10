@@ -152,6 +152,16 @@ class DrawIconsTest(unittest.TestCase):
         self.assertIn("cannot be read", err)
         self.assertEqual(self.written(), ["junk.ttf"])
 
+    def test_a_non_font_named_like_lato_is_not_replaced_by_the_installed_lato(self):
+        """Pillow would load a system font of the same name; the script must read the file it was given."""
+        folder = self.out / "fonts"
+        folder.mkdir()
+        for name in ("Lato-Bold.ttf", "Lato-Regular.ttf"):
+            (folder / name).write_text("not a font")
+        code, _, err = self.run_script("--bold", str(folder / "Lato-Bold.ttf"), "--regular", str(folder / "Lato-Regular.ttf"))
+        self.assertEqual(code, 1)
+        self.assertIn("cannot be read", err)
+
     @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root can write anywhere")
     def test_a_folder_it_cannot_write_to_is_reported_and_leaves_no_temporary_files(self):
         """An unwritable folder is reported with exit 1 and leaves no temporary files."""

@@ -11,7 +11,7 @@ Requirements (PB-xxx) are in the PRD, `docs/PromoBase_Product_Requirements_Docum
 - `npm run check` - lint, type check, format check, unit tests, build. Run it before every commit.
 - `npm test` - unit tests only.
 - `npm run build` - production build into `dist/`, which is what gets loaded in Chrome.
-- `npm run test:tools` - tests for `tools/draw-icons.py` (Python 3.8+ with Pillow; CI runs them too).
+- `npm run test:tools` - tests for the Python tools, `draw-icons.py` and `compose-store-screenshots.py` (Python 3.8+ with Pillow; tests that set text need the Lato and Inter fonts and skip without them; CI runs them all).
 - `npm run test:browser` - the browser checks in `tests/browser`, against `dist/` in Chrome for Testing under a virtual display; see `tests/browser/README.md`. CI runs them on `main`, on a manual run and on pull requests labelled `browser-checks`.
 - `npm run screenshots` - the Chrome Web Store screenshots, into `browser-output/store/` (D-117).
 
