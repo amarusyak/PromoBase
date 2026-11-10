@@ -5,7 +5,7 @@
 
 Writes public/icons/icon-{16,32,48,128}.png and store/promo-tile-440x280.png,
 under the repository or under --out. Tests: tools/test_draw_icons.py.
-Needs Python 3.8 or later and Pillow (pip install -r tools/requirements.txt).
+Needs Python 3.11 or later and Pillow 13 (pip install -r tools/requirements.txt).
 The tile needs the Lato fonts (SIL Open Font License): pass them, or have them
 installed where the script looks; without them only the icons are drawn.
 
@@ -29,8 +29,10 @@ import tempfile
 
 from pathlib import Path
 
-if sys.version_info < (3, 8):
-    sys.exit("draw-icons.py needs Python 3.8 or later; this is " + sys.version.split()[0] + ".")
+if sys.version_info < (3, 11):
+    this = sys.version.split()[0]
+    print(f"draw-icons.py needs Python 3.11 or later (for Pillow 13); this is {this}.", file=sys.stderr)
+    sys.exit(2)
 
 try:
     from PIL import Image, ImageDraw, ImageFont, __version__ as PILLOW_VERSION
@@ -39,8 +41,8 @@ except ImportError:
     print("Install it with: python3 -m pip install -r tools/requirements.txt", file=sys.stderr)
     sys.exit(2)
 
-if not hasattr(ImageDraw.ImageDraw, "rounded_rectangle"):
-    print(f"Pillow {PILLOW_VERSION} is too old: rounded rectangles need 8.2 or later.", file=sys.stderr)
+if int(PILLOW_VERSION.split(".")[0]) < 13:
+    print(f"Pillow {PILLOW_VERSION} is too old: these tools need 13 or later (tools/requirements.txt).", file=sys.stderr)
     sys.exit(2)
 
 

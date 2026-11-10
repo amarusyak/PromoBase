@@ -6,6 +6,7 @@
 The popup captures go on a navy page with a short caption; the library
 captures are used as they are. Captions are set in Inter (SIL Open Font
 License): from --fonts, or from where Inter is usually installed.
+Needs Python 3.11 or later and Pillow 13 (pip install -r tools/requirements.txt).
 
 It stops with a clear message rather than make a screenshot that would
 mislead: a capture that is missing, not an image, of the wrong size or a
@@ -29,14 +30,20 @@ import sys
 import tempfile
 from pathlib import Path
 
-if sys.version_info < (3, 8):
-    sys.exit("compose-store-screenshots.py needs Python 3.8 or later; this is " + sys.version.split()[0] + ".")
+if sys.version_info < (3, 11):
+    this = sys.version.split()[0]
+    print(f"compose-store-screenshots.py needs Python 3.11 or later (for Pillow 13); this is {this}.", file=sys.stderr)
+    sys.exit(2)
 
 try:
-    from PIL import Image, ImageDraw, ImageFilter, ImageFont, UnidentifiedImageError
+    from PIL import Image, ImageDraw, ImageFilter, ImageFont, UnidentifiedImageError, __version__ as PILLOW_VERSION
 except ImportError:
     print("Pillow is not installed for " + sys.executable + ".", file=sys.stderr)
     print("Install it with: python3 -m pip install -r tools/requirements.txt", file=sys.stderr)
+    sys.exit(2)
+
+if int(PILLOW_VERSION.split(".")[0]) < 13:
+    print(f"Pillow {PILLOW_VERSION} is too old: these tools need 13 or later (tools/requirements.txt).", file=sys.stderr)
     sys.exit(2)
 
 NAVY = (20, 33, 61)

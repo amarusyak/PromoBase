@@ -4,6 +4,8 @@ They draw into a temporary folder, never into the repository."""
 
 import importlib.util
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -238,6 +240,40 @@ class DrawIconsTest(unittest.TestCase):
             draw_icons.check_no_metadata(path)
         Image.new("RGB", (4, 4)).save(path)
         draw_icons.check_no_metadata(path)
+
+
+SCRIPT = HERE / "draw-icons.py"
+
+
+def script_args(root, out):
+    """The command line that runs the script on `root`, writing into `out`."""
+    return ["--out", str(out)]
+
+
+class RequirementsTest(unittest.TestCase):
+    """The script refuses to run with a Pillow older than tools/requirements.txt asks for."""
+
+    def test_an_old_pillow_stops_it_with_exit_2_and_writes_nothing(self):
+        """A stand-in Pillow 12.3.0 on the path makes the script exit 2 before it draws anything."""
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            fake = root / "PIL"
+            fake.mkdir()
+            (fake / "__init__.py").write_text('__version__ = "12.3.0"\nclass UnidentifiedImageError(OSError):\n    pass\n')
+            for name in ("Image", "ImageDraw", "ImageFilter", "ImageFont"):
+                (fake / f"{name}.py").write_text("")
+            out = root / "out"
+            out.mkdir()
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), *script_args(root, out)],
+                env={**os.environ, "PYTHONPATH": str(root)},
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self.assertIn("Pillow 12.3.0 is too old", result.stderr)
+            self.assertEqual(list(out.iterdir()), [])
 
 
 if __name__ == "__main__":
