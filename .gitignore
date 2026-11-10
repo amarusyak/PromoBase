@@ -17,6 +17,7 @@ build/
 !.env.example
 
 # Test output
+browser-output/
 coverage/
 playwright-report/
 test-results/
