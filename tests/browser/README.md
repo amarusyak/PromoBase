@@ -24,6 +24,7 @@ They run in CI on every push to `main`, on a manual run, and on pull requests la
 
 - **Linux with an X display**, usually a virtual one: `xvfb-run` (package `xvfb`) and `libxtst6`, which the checks use to press keys in Chrome's dialog.
 - **Python 3 with Pillow** (`pip install -r tools/requirements.txt`), to read the toolbar from the screen.
+- **The Inter fonts** (package `fonts-inter`). `npm run test:browser` maps the pages' `system-ui` font to Inter through `support/fonts.conf`, so heights come out the same on every machine; Inter's metrics match macOS. A wider font, such as Linux's DejaVu Sans, makes the popup about 19px taller (D-127).
 
 ```sh
 npm run build
@@ -43,4 +44,4 @@ One file at a time: `node --test --test-reporter=spec tests/browser/reminders.br
 
 ## Store screenshots
 
-`npm run screenshots` makes the Chrome Web Store screenshots from the same build (D-117), into `browser-output/store/`. In CI it runs on a manual run with "Also make the Chrome Web Store screenshots" ticked, and the files are kept for 7 days as the `store-screenshots` artifact, to be checked and committed to `store/` by hand. It needs the Inter fonts (package `fonts-inter`) and a larger screen: `xvfb-run -a -s "-screen 0 2800x2000x24" npm run screenshots`.
+`npm run screenshots` makes the Chrome Web Store screenshots from the same build (D-117), into `browser-output/store/`. In CI it runs on a manual run with "Also make the Chrome Web Store screenshots" ticked, and the files are kept for 7 days as the `store-screenshots` artifact, to be checked and committed to `store/` by hand. It uses the same fonts and needs a larger screen: `xvfb-run -a -s "-screen 0 2800x2000x24" npm run screenshots`.

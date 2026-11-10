@@ -8,7 +8,7 @@
 // browser-output/store/, for a person to look at and commit to store/.
 // Needs PROMOBASE_CHROME (see tests/browser/README.md), Python with Pillow,
 // and the Inter fonts; system-ui is mapped to Inter by
-// tools/screenshot-fonts.conf so the pages look the same on any machine.
+// tests/browser/support/fonts.conf so the pages look the same on any machine.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
