@@ -6,6 +6,7 @@ Thanks for helping. PromoBase is small on purpose, so a few rules keep it that w
 
 - One pull request per change. `main` only changes by merging a reviewed pull request, and CI must be green.
 - Run `npm run check` before every commit (lint, type check, format, unit tests, build). Changes to `tools/` also need `npm run test:tools`.
+- A change to what the popup or library does comes with a browser check in `tests/browser` (see its README). Add the `browser-checks` label to the pull request to run them before merging; they also run on every push to `main`.
 - Requirements (PB-xxx) and decisions (D-xxx) are in [`docs/`](docs/README.md). Mention the IDs a change implements in its commits, pull request and test names.
 - Never commit secrets, signing keys or real promo codes. Test data is made up, and example sites use reserved names such as `example.org` or `shop.example`.
 

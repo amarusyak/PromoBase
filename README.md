@@ -47,6 +47,7 @@ Checks:
 ```sh
 npm run check    # lint, type check, format check, unit tests, build
 npm test         # unit tests only
+npm run test:browser   # the built extension in a real Chrome; see tests/browser/README.md
 ```
 
 The icons and the store tile are drawn by a script, so they carry no metadata (Python 3.8 or later):

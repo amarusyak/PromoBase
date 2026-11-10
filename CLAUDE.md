@@ -12,6 +12,8 @@ Requirements (PB-xxx) are in the PRD, `docs/PromoBase_Product_Requirements_Docum
 - `npm test` - unit tests only.
 - `npm run build` - production build into `dist/`, which is what gets loaded in Chrome.
 - `npm run test:tools` - tests for `tools/draw-icons.py` (Python 3.8+ with Pillow; CI runs them too).
+- `npm run test:browser` - the browser checks in `tests/browser`, against `dist/` in Chrome for Testing under a virtual display; see `tests/browser/README.md`. CI runs them on `main`, on a manual run and on pull requests labelled `browser-checks`.
+- `npm run screenshots` - the Chrome Web Store screenshots, into `browser-output/store/` (D-117).
 
 ## Rules
 
@@ -26,7 +28,7 @@ Requirements (PB-xxx) are in the PRD, `docs/PromoBase_Product_Requirements_Docum
 - What a person may enter is checked in `src/domain/record-input.ts`. The read-side check in `stored-state.ts` stays limited to what the logic depends on, so a stricter entry rule never makes saved data unreadable.
 - The service worker must not load the Public Suffix List (about 300 kB, pulled in by `src/domain/derive-merchant-domain.ts` and anything that imports it, such as `record-input` and `record-store`) or React. `tests/service-worker-imports.test.ts` checks the source, and `vite.config.ts` fails the build if the bundled worker loads either.
 - When a visit opens the popup is decided in `src/domain/visit-reminder.ts`, a pure function of the visit state and what Chrome reports; `src/data/visit-reminders.ts` only reads, writes and carries out the effect, under one lock.
-- React components stay thin. What they show is worked out in plain modules under `src/ui` (`messages`, `record-view`, `date-mask`, `draft`), which have unit tests; the components themselves are checked by driving the built extension in a browser.
+- React components stay thin. What they show is worked out in plain modules under `src/ui` (`messages`, `record-view`, `date-mask`, `draft`), which have unit tests; the components themselves are checked by driving the built extension in a browser (`tests/browser`). A change to what a page does comes with a browser check for it.
 - Every sentence shown for a problem lives in `src/ui/messages.ts`, keyed by the reason codes of the logic.
 - The popup must stay under Chrome's 600px height limit in its normal state.
 - The extension makes no network requests and loads no remote fonts or scripts.
