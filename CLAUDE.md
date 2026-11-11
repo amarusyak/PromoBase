@@ -4,7 +4,7 @@ Chrome Manifest V3 extension: TypeScript, React, Vite. Local-first, no backend.
 
 ## Sources of truth
 
-Requirements (PB-xxx) are in the PRD, `docs/PromoBase_Product_Requirements_Document_v0.3.pdf`. Decisions (D-xxx) are in the working log, `claude/decisions.md` in the PromoBase project knowledge, and its published copy `docs/decisions.md`, which leaves out the Setup status section. A pull request that adds or changes a decision brings the copy up to date. Where the PRD and the log disagree, the log wins. Reference the IDs in commits, pull requests and test names where they apply.
+Requirements (PB-xxx) are in the PRD, `docs/PromoBase_Product_Requirements_Document_v0.4.pdf`, the resulting PRD of the first release; v0.3 next to it is the entry PRD it was written from (D-065, D-132). Decisions (D-xxx) are in the working log, `claude/decisions.md` in the PromoBase project knowledge, and its published copy `docs/decisions.md`, which leaves out the Setup status section. A pull request that adds or changes a decision brings the copy up to date. Where the PRD and the log disagree, the log wins. Reference the IDs in commits, pull requests and test names where they apply.
 
 ## Commands
 
