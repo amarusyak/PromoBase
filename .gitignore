@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 build/
+release/
 *.tsbuildinfo
 
 # Packaged extension and signing material - never commit

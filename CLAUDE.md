@@ -14,6 +14,7 @@ Requirements (PB-xxx) are in the PRD, `docs/PromoBase_Product_Requirements_Docum
 - `npm run test:tools` - tests for the Python tools, `draw-icons.py` and `compose-store-screenshots.py` (Python 3.11+ with Pillow 13; tests that set text need the Lato and Inter fonts and skip without them; CI runs them all).
 - `npm run test:browser` - the browser checks in `tests/browser`, against `dist/` in Chrome for Testing under a virtual display; see `tests/browser/README.md`. CI runs them on `main`, on a manual run and on pull requests labelled `browser-checks`.
 - `npm run screenshots` - the Chrome Web Store screenshots, into `browser-output/store/` (D-117).
+- `node tools/release.mjs [vX.Y.Z]` - after `npm run check`, zips `dist/` into `release/promobase-X.Y.Z.zip` and checks it; the Release workflow runs it on a tag. How a release is made: `RELEASING.md` (D-121).
 
 ## Rules
 
