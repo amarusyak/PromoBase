@@ -2,14 +2,15 @@
 
 A Chrome extension for saving promo codes - especially the ones you pick up from creators and online content - and getting reminded of them when you visit the merchant's site.
 
-**Status:** early development. Codes can be saved from the popup and managed in the library. On a site you have codes for, the toolbar icon changes and the popup lists them. Reminders can be switched on per site, which asks Chrome for access to that site; PromoBase then opens by itself, once per visit, when you go to that site.
+**Status:** version 0.1.0, the first release. Until it is on the Chrome Web Store, it can be installed from source (see [Development](#development)).
 
 ## What it does (first release)
 
-- Save a promo code with the merchant's URL, an optional note, and optional start and expiry dates.
+- Save a promo code with an optional merchant URL, note, start date, or expiry date.
+- On a site you have codes for, the PromoBase toolbar icon turns yellow, and the popup lists that site's codes. This needs no access to the site.
 - Browse, search, edit and delete saved codes in a local library.
 - Export every saved code to a JSON file from the library, and import such a file back, for example on another computer.
-- Opt in per merchant to a reminder: when you visit that merchant's site, PromoBase shows the matching codes.
+- Opt in per merchant to a reminder: when you visit that merchant's site, PromoBase opens by itself, once per visit, with the matching codes. Chrome asks for access to that site when you switch it on.
 
 ## Supported browser
 
@@ -23,6 +24,8 @@ Google Chrome desktop, version 127 or later (Manifest V3).
 - Local-only storage means records are lost if the extension is removed or the browser profile is deleted. Export from the library keeps a copy on your computer, and Import brings it back.
 
 The full [privacy policy](PRIVACY.md) says what PromoBase keeps and looks at. The Chrome Web Store listing text and images are in [`store/`](store/listing.md).
+
+The product requirements (PRD v0.4) and the decisions behind them are in [`docs/`](docs/README.md).
 
 ## Development
 
