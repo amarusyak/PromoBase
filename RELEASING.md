@@ -33,7 +33,7 @@ git tag -a v0.2.0 -m "PromoBase 0.2.0"
 git push origin v0.2.0
 ```
 
-The tag must be `v` followed by the version in package.json. The **Release** workflow then runs on it: it refuses a tag that is not on `main` or does not match the version, runs `npm run check`, zips `dist/` and checks the zip (manifest at the root, the version, every file the manifest names, the licence notices, no source maps or hidden files). The zip is kept for 90 days on the run's page as `promobase-0.2.0.zip`.
+The tag must be `v` followed by the version in package.json. The **Release** workflow then runs on it: it refuses a tag that is not on `main` or does not match the version, runs `npm run check`, zips `dist/` and checks the zip (manifest at the root, the version, every file the manifest names and the library page, the licence notices, no source maps or hidden files). The zip is kept for 90 days on the run's page as `promobase-0.2.0.zip`.
 
 A dry run of the same packaging, without a tag, runs on every pull request that changes the workflow or `tools/release.mjs`, can be started from the Actions tab on any branch (Release, Run workflow), or locally with `npm run check && node tools/release.mjs`.
 

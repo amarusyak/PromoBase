@@ -11,6 +11,7 @@ import {
 import {
   manifestFiles,
   NOTICES,
+  PAGES,
   packageProblems,
   packageRelease,
   versionFromTag,
@@ -64,6 +65,43 @@ const GOOD = [
 ];
 const good = { entries: GOOD, manifest, version: manifest.version };
 
+// Every .html page the source points to, and every page the build makes,
+// must be one the zip check requires: named by the manifest or in PAGES.
+const sources = import.meta.glob<string>('../src/**/*.{ts,tsx}', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+const viteConfig = import.meta.glob<string>('../vite.config.ts', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+const htmlNames = (text: string) => [...text.matchAll(/['"]([\w-]+\.html)['"]/g)].map((m) => m[1]);
+
+describe('pages the zip check requires', () => {
+  const required = new Set([...manifestFiles(manifest), ...PAGES]);
+
+  it('include the library, which the manifest does not name', () => {
+    expect(PAGES).toContain('library.html');
+    expect(manifestFiles(manifest)).not.toContain('library.html');
+  });
+
+  it('include every page the source opens or links to', () => {
+    const named = Object.entries(sources)
+      .filter(([path]) => !path.endsWith('.test.ts'))
+      .flatMap(([, text]) => htmlNames(text));
+    expect(named).toContain('library.html');
+    for (const page of named) expect(required, page).toContain(page);
+  });
+
+  it('include every page the build makes', () => {
+    const built = htmlNames(Object.values(viteConfig)[0] ?? '');
+    expect(built).toEqual(expect.arrayContaining(['popup.html', 'library.html']));
+    for (const page of built) expect(required, page).toContain(page);
+  });
+});
+
 describe('packageProblems', () => {
   it('finds nothing wrong with a complete package', () => {
     expect(packageProblems(good)).toEqual([]);
@@ -87,6 +125,12 @@ describe('packageProblems', () => {
       'The manifest names icons/icon-48.png, which is not in the zip.',
       'The manifest names popup.html, which is not in the zip.',
     ]);
+  });
+
+  it('requires the library page, which the manifest does not name', () => {
+    expect(packageProblems({ ...good, entries: GOOD.filter((e) => e !== 'library.html') })).toEqual(
+      ['PromoBase opens library.html, which is not in the zip.'],
+    );
   });
 
   it('requires the licence notices (D-122)', () => {

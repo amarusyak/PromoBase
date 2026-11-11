@@ -5,8 +5,8 @@
 // Zips the built dist/ into release/promobase-X.Y.Z.zip and checks the zip
 // before anything is uploaded: the manifest at its root, the version equal to
 // package.json and, when a tag is given, to the tag; every file the manifest
-// names present; the licence notices included; no source maps, hidden files or
-// folders from another system. Run after `npm run check`, which builds dist/.
+// names and every page PromoBase opens itself present; the licence notices
+// included; no source maps, hidden files or folders from another system. Run after `npm run check`, which builds dist/.
 // The release workflow (.github/workflows/release.yml) runs it on a tag.
 //
 // Exit codes: 0 packaged, 1 a check failed.
@@ -17,6 +17,11 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const NOTICES = 'THIRD_PARTY_NOTICES.txt';
+
+// Pages the extension opens itself, which the manifest does not name: the
+// library, from the welcome on install and from the popup's links.
+// tests/release.test.ts keeps this list in step with the source and the build.
+export const PAGES = ['library.html'];
 
 /** The X.Y.Z of a release tag vX.Y.Z, or undefined for anything else. */
 export function versionFromTag(tag) {
@@ -51,6 +56,9 @@ export function packageProblems({ entries, manifest, version }) {
   }
   for (const path of manifestFiles(manifest)) {
     if (!files.has(path)) problems.push(`The manifest names ${path}, which is not in the zip.`);
+  }
+  for (const path of PAGES) {
+    if (!files.has(path)) problems.push(`PromoBase opens ${path}, which is not in the zip.`);
   }
   if (!files.has(NOTICES)) problems.push(`${NOTICES} is not in the zip (D-122).`);
   for (const entry of [...files].sort()) {

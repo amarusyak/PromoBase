@@ -6,6 +6,7 @@ export interface ReleaseManifest {
 }
 
 export declare const NOTICES: string;
+export declare const PAGES: readonly string[];
 export declare function versionFromTag(tag: string): string | undefined;
 export declare function manifestFiles(manifest: ReleaseManifest): string[];
 export declare function packageProblems(input: {
