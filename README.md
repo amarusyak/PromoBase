@@ -6,7 +6,7 @@ A Chrome extension for saving promo codes - especially the ones you pick up from
 
 ## What it does (first release)
 
-- Save a promo code with the merchant's URL, an optional note, and optional start and expiry dates.
+- Save a promo code with an optional merchant URL, note, start date, or expiry date.
 - On a site you have codes for, the PromoBase toolbar icon turns yellow, and the popup lists that site's codes. This needs no access to the site.
 - Browse, search, edit and delete saved codes in a local library.
 - Export every saved code to a JSON file from the library, and import such a file back, for example on another computer.
