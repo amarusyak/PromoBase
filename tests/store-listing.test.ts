@@ -64,6 +64,12 @@ describe('store listing', () => {
   });
 });
 
+describe('store listing version', () => {
+  it('names the version it is for (RELEASING.md)', () => {
+    expect(listing).toContain(`for PromoBase ${manifest.version}.`);
+  });
+});
+
 describe('privacy policy', () => {
   it('names the version it applies to', () => {
     expect(privacy).toContain(`Applies to PromoBase ${manifest.version} for Google Chrome.`);

@@ -59,6 +59,8 @@ python3 tools/draw-icons.py
 
 How to contribute, including the rules for changing stored data: [CONTRIBUTING.md](CONTRIBUTING.md).
 
+How a version is released to the Chrome Web Store: [RELEASING.md](RELEASING.md).
+
 Stack: TypeScript, Manifest V3, React with Vite.
 
 | Path             | Contents                                                  |

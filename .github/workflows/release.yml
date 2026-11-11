@@ -1,0 +1,61 @@
+name: Release
+
+# Packages a release for the Chrome Web Store (D-121, RELEASING.md). Pushing a
+# tag vX.Y.Z runs it on that commit. It builds and checks the zip and keeps it
+# as a download; uploading it to the store is done by hand, so no store
+# credentials are here.
+
+on:
+  push:
+    tags: ['v*.*.*']
+  # A dry run, without a tag: by hand on any branch, and on a pull request
+  # that changes the release workflow or its script.
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - tools/release.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The whole history, to check that a tagged commit is on main.
+          fetch-depth: 0
+      - name: Check the tagged commit is on main
+        if: github.ref_type == 'tag'
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME points to $GITHUB_SHA, which is not on main."
+            exit 1
+          fi
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Package and check the zip
+        env:
+          # Passed through the environment, not pasted into the command.
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: node tools/release.mjs ${TAG:+"$TAG"}
+      - name: Keep the zip
+        uses: actions/upload-artifact@v7
+        with:
+          # One file, kept as it is rather than zipped again; the download is
+          # the zip to upload to the store, named promobase-X.Y.Z.zip.
+          path: release/promobase-*.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 90
