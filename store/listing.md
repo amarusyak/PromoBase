@@ -1,6 +1,6 @@
 # Chrome Web Store listing
 
-Text to paste into the Chrome Web Store developer dashboard for PromoBase 0.1.0. Keep it in step with `PRIVACY.md` and `public/manifest.json`: a change to either should be checked here too.
+Text to paste into the Chrome Web Store developer dashboard for PromoBase 0.1.0. Keep it in step with `PRIVACY.md` and `public/manifest.json`: a change to either should be checked here too. The published listing: [Chrome Web Store](https://chromewebstore.google.com/detail/promobase/elmfhcdfmbgahialibbopcmjbbknhbgj).
 
 ## Store listing
 
@@ -18,7 +18,7 @@ Text to paste into the Chrome Web Store developer dashboard for PromoBase 0.1.0.
 
 > Found a promo code in a video, a newsletter or a post, but not ready to buy yet? Save it in PromoBase, and find it again when you get to the shop.
 >
-> - Save a code with the shop it is for, a start or expiry date, and a short note.
+> - Save just the code, or add the shop it is for, a start or expiry date, and a short note.
 > - On that shop's site, the PromoBase icon turns yellow. Click it to see your codes for that shop and copy one.
 > - If you like, PromoBase can open by itself when you visit a shop you choose. Chrome asks before reminders start.
 > - Codes past their expiry date stay in your list, marked Expired, so nothing disappears without you knowing.
@@ -81,7 +81,7 @@ Certify all three:
 - I do not use or transfer user data for purposes that are unrelated to my item's single purpose.
 - I do not use or transfer user data to determine creditworthiness or for lending purposes.
 
-**Privacy policy URL:** https://github.com/amarusyak/PromoBase/blob/main/PRIVACY.md (the repository has to be public, or the file hosted elsewhere, before submission).
+**Privacy policy URL:** https://github.com/amarusyak/PromoBase/blob/main/PRIVACY.md
 
 ## Distribution
 

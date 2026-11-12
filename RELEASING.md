@@ -39,10 +39,12 @@ A dry run of the same packaging, without a tag, runs on every pull request that 
 
 ## 4. Upload to the Chrome Web Store
 
-1. Download `promobase-X.Y.Z.zip` from the Release run.
+1. Download `promobase-X.Y.Z.zip` from the Release run, under **Artifacts** on the run's page. Not the "Source code (zip)" GitHub adds to every tag: that holds the repository, not the built extension, and the store refuses it because `manifest.json` is not at its root.
 2. In the [developer dashboard](https://chrome.google.com/webstore/devconsole), open PromoBase, then **Package**, **Upload new package**, and choose the zip.
 3. Check the **Store listing** and **Privacy practices** tabs against `store/listing.md`; the first release fills them in from it, with the icon, tile and screenshots it names.
-4. **Submit for review**. Leave "publish automatically after review" on unless the release has to wait.
+4. **Submit for review**. Leave "publish automatically after review" on unless the release has to wait; a release held back has to be published within 30 days of its approval.
+
+The first upload also needed 2-Step Verification on the publisher's Google account and a confirmed contact email in the dashboard's account settings.
 
 Rolling out to part of the users needs more than 10,000 weekly users, so a release goes to everyone at once: the testing in step 1 is the last chance to catch a problem.
 

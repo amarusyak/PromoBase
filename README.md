@@ -2,7 +2,7 @@
 
 A Chrome extension for saving promo codes - especially the ones you pick up from creators and online content - and getting reminded of them when you visit the merchant's site.
 
-**Status:** version 0.1.0, the first release. Until it is on the Chrome Web Store, it can be installed from source (see [Development](#development)).
+**Status:** version 0.1.0, the first release, is [on the Chrome Web Store](https://chromewebstore.google.com/detail/promobase/elmfhcdfmbgahialibbopcmjbbknhbgj). It can also be built and loaded from source (see [Development](#development)).
 
 ## What it does (first release)
 
