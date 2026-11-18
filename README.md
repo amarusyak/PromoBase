@@ -27,6 +27,53 @@ The full [privacy policy](PRIVACY.md) says what PromoBase keeps and looks at. Th
 
 The product requirements (PRD v0.4) and the decisions behind them are in [`docs/`](docs/README.md).
 
+## Architecture
+
+```mermaid
+flowchart LR
+  user(["User"])
+
+  subgraph pages["Extension pages"]
+    popup["Popup<br/>popup.html"]
+    library["Library tab<br/>library.html"]
+  end
+
+  subgraph storage["Chrome storage"]
+    local[("storage.local<br/>saved codes, up to 100")]
+    session[("storage.session<br/>visit state, popup draft")]
+  end
+
+  subgraph worker["Service worker"]
+    visits["Visit reminders"]
+    highlight["Highlight sync"]
+    access["Access sync"]
+  end
+
+  subgraph chrome["Chrome"]
+    tabs["Tabs and toolbar"]
+    rule["Icon rule<br/>declarativeContent"]
+    perms["Site access<br/>one pattern per shop"]
+  end
+
+  user -->|uses| pages
+  pages -->|"writes through the<br/>record store, one lock"| local
+  local -.->|on change| highlight
+  local -.->|on change| access
+  session <-->|visit state| visits
+  visits <-->|"events, openPopup"| tabs
+  highlight -->|sets rule| rule
+  access -->|gives back| perms
+  pages -->|"asks per shop,<br/>from a click"| perms
+```
+
+Solid arrows are writes or calls, dashed ones are events.
+
+- **Pages.** The popup and the library are React pages. Every change to saved codes goes through `src/data/record-store.ts`, which holds one lock for the whole read-change-write; nothing else writes to `storage.local`.
+- **Service worker.** Chrome wakes it for a change to the saved codes and for tab, window, install and startup events. It keeps the toolbar icon rule and the site access PromoBase holds in step with the saved shops, and opens the popup when you visit a shop with reminders on. It loads neither React nor the Public Suffix List.
+- **Chrome.** The icon turns yellow through a rule Chrome runs itself, so it needs no access to the site. Site access is asked for only from a click in a page, as `*://*.<shop>/*` for each shop with reminders on, and given back once no shop needs it. PromoBase sees a shop's address, never the content of its pages, and makes no network requests.
+
+Inside each part, the code is layered the same way: `src/ui` works out what a page shows, `src/data` reads and writes under locks, `src/domain` holds the pure logic, and only `src/platform` calls Chrome (see the table under [Development](#development)).
+
 ## Development
 
 Requirements: Node.js 22.12 or later, npm, and Google Chrome 127 or later.
